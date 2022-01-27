@@ -1,11 +1,9 @@
-from heapq import merge
 from weconnect.weconnect import WeConnect
 from weconnect.elements import vehicle
 from weconnect.elements.battery_status import BatteryStatus
 from weconnect.elements.charging_status import ChargingStatus
 from weconnect.elements.charging_settings import ChargingSettings
 from weconnect.elements.plug_status import PlugStatus
-
 
 
 class WeConnect_battery_data:
@@ -21,8 +19,7 @@ class WeConnect_battery_data:
             **self.__get_charging_settings(battery_data["chargingSettings"]),
         }
         data = {**data, **self.__get_plug_status(battery_data["plugStatus"])}
-        for key, item in data.items():
-            print(item)
+        return data
 
     def __get_battery_status(self, battery_status: BatteryStatus) -> dict:
         battery_status_data = {}
@@ -66,7 +63,8 @@ class WeConnect_battery_data:
         )
         charging_settings_data["target SoC pct"] = Battery_data_property(
             charging_settings.targetSOC_pct.value,
-            "Target battery charge level percentage", "%"
+            "Target battery charge level percentage",
+            "%",
         )
         return charging_settings_data
 
@@ -79,6 +77,7 @@ class WeConnect_battery_data:
             plug_status.plugLockState.value.value, "Charge plug lock status"
         )
         return plug_status_data
+
 
 class Battery_data_property:
     def __init__(self, value, desc, unit=None) -> None:
@@ -96,9 +95,15 @@ class Battery_data_property:
     def __str__(self) -> str:
         return f"{self.__desc:<50}{self.__value}"
 
+
 if __name__ == "__main__":
-    weconnect = WeConnect("username", "password")
+    weconnect = WeConnect("email", "passwd")
     weconnect.login()
-    id3 = weconnect.vehicles["vin"]
+    vin = ""
+    for vin, car in weconnect.vehicles.items():
+        vin = vin
+        break
+    id3 = weconnect.vehicles[vin]
     battery = WeConnect_battery_data(id3)
-    battery.get_data()
+    for key, item in battery.get_data().items():
+        print(item)
