@@ -44,45 +44,45 @@ class FailedToSetTemperatureError(Exception):
 
 
 class Climate_controller:
+
+    CLIMATE_CONTROL_VALUES_ON = [
+        ClimatizationStatus.ClimatizationState.COOLING,
+        ClimatizationStatus.ClimatizationState.HEATING,
+        ClimatizationStatus.ClimatizationState.VENTILATION,
+    ]
+    CLIMATE_CONTROL_VALUES_OFF = [
+        ClimatizationStatus.ClimatizationState.OFF,
+        ClimatizationStatus.ClimatizationState.UNKNOWN,
+    ]
+    DISALLOWED_CLIMATE_STATES = {
+        ControlOperation.START: CLIMATE_CONTROL_VALUES_ON,
+        ControlOperation.STOP: CLIMATE_CONTROL_VALUES_OFF,
+    }
+
+    SUCCESSFULL_REQUEST = GenericStatus.Request.Status.SUCCESSFULL
+    FAILED_REQUESTS = [
+        GenericStatus.Request.Status.FAIL_VEHICLE_IS_OFFLINE,
+        GenericStatus.Request.Status.FAIL_BATTERY_LOW,
+        GenericStatus.Request.Status.FAIL_CHARGE_PLUG_NOT_CONNECTED,
+        GenericStatus.Request.Status.FAIL_IGNITION_ON,
+        GenericStatus.Request.Status.FAIL_PLUG_ERROR,
+        GenericStatus.Request.Status.FAIL,
+        GenericStatus.Request.Status.UNKNOWN,
+    ]
+    QUEUED_REQUEST = GenericStatus.Request.Status.QUEUED
+    IN_PROGRESS_REQUEST = GenericStatus.Request.Status.IN_PROGRESS
+
     def __init__(self, vehicle: Vehicle) -> None:
 
         self.__vehicle = vehicle
         self.__weconnect = vehicle.weConnect
-
-        self.__climate_control_values_on = [
-            ClimatizationStatus.ClimatizationState.COOLING,
-            ClimatizationStatus.ClimatizationState.HEATING,
-            ClimatizationStatus.ClimatizationState.VENTILATION,
-        ]
-        self.__climate_control_values_off = [
-            ClimatizationStatus.ClimatizationState.OFF,
-            ClimatizationStatus.ClimatizationState.UNKNOWN,
-        ]
-
-        self.__disallowed_climate_states = {
-            ControlOperation.START: self.__climate_control_values_on,
-            ControlOperation.STOP: self.__climate_control_values_off,
-        }
-
-        self.__successfull_request = GenericStatus.Request.Status.SUCCESSFULL
-        self.__failed_requests = [
-            GenericStatus.Request.Status.FAIL_VEHICLE_IS_OFFLINE,
-            GenericStatus.Request.Status.FAIL_BATTERY_LOW,
-            GenericStatus.Request.Status.FAIL_CHARGE_PLUG_NOT_CONNECTED,
-            GenericStatus.Request.Status.FAIL_IGNITION_ON,
-            GenericStatus.Request.Status.FAIL_PLUG_ERROR,
-            GenericStatus.Request.Status.FAIL,
-            GenericStatus.Request.Status.UNKNOWN,
-        ]
-        self.__queued_request = GenericStatus.Request.Status.QUEUED
-        self.__in_progress_request = GenericStatus.Request.Status.IN_PROGRESS
 
         self.__request_id = None
         self.__request_state = None
         self.__operation_running = False
 
     def start(self, call_when_ready: callable) -> None:
-        '''
+        """
         Start climatisation control of the car
 
         Args:
@@ -90,7 +90,7 @@ class Climate_controller:
 
         Raises:
             e: [Could be any exception given in this module]
-        '''
+        """
         try:
             self.__make_request(ControlOperation.START)
         except Exception as e:
@@ -101,7 +101,7 @@ class Climate_controller:
             call_when_ready()
 
     def stop(self, call_when_ready: callable) -> None:
-        '''
+        """
         Stop climatisation control of the car
 
         Args:
@@ -109,7 +109,7 @@ class Climate_controller:
 
         Raises:
             e: [Could be any exception given in this module]
-        '''
+        """
         try:
             self.__make_request(ControlOperation.STOP)
         except Exception as e:
@@ -120,7 +120,7 @@ class Climate_controller:
             call_when_ready()
 
     def set_temperature(self, temperature: float) -> None:
-        '''
+        """
         Set climate control temperature
 
         Args:
@@ -129,26 +129,34 @@ class Climate_controller:
         Raises:
             FailedToSetTemperatureError: [Setting temperature failed]
             ValueError: [If temperature is out of acceptable range]
-        '''
+        """
         logging.info("Updating weconnect")
 
         if temperature < 15.5 or 30 < temperature:
             raise ValueError("Requested temperature is out of range")
-        
+
         self.__update()
-        
+
         settings = self.__vehicle.domains["climatisation"]["climatisationSettings"]
-        
+
         try:
             logging.info("Updating target temperature value")
-            if settings.targetTemperature_C is not None and settings.targetTemperature_C.enabled:
+            if (
+                settings.targetTemperature_C is not None
+                and settings.targetTemperature_C.enabled
+            ):
                 settings.targetTemperature_C.value = temperature
-            elif settings.targetTemperature_K is not None and settings.targetTemperature_K.enabled:
-                settings.targetTemperature_K.value = (temperature + 273.15)
+            elif (
+                settings.targetTemperature_K is not None
+                and settings.targetTemperature_K.enabled
+            ):
+                settings.targetTemperature_K.value = temperature + 273.15
         except Exception:
             raise FailedToSetTemperatureError("Failed to set target temperature")
         else:
-            logging.info(f"Successfully updated target temperature value -> {temperature}°C")
+            logging.info(
+                f"Successfully updated target temperature value -> {temperature}°C"
+            )
 
     def __update(self) -> None:
         logging.info("Updating weconnect")
@@ -201,9 +209,11 @@ class Climate_controller:
     def __check_climate_state(self, operation: ControlOperation):
         logging.info("Checking if climate control is in acceptable state")
         state = self.__get_climate_control_state(update=True)
-        acceptable_state = state not in self.__disallowed_climate_states[operation]
+        acceptable_state = state not in self.DISALLOWED_CLIMATE_STATES[operation]
         if not acceptable_state:
-            raise ClimateControlAlreadyOnError("Climate control is already in requested state")
+            raise ClimateControlAlreadyOnError(
+                "Climate control is already in requested state"
+            )
         logging.info("Climate control state -> Acceptable")
 
     def __make_request(self, operation: ControlOperation):
@@ -258,7 +268,9 @@ class Climate_controller:
                 for request in requests
                 if str(request.requestId) == self.__request_id
             ).status.value
-            logging.info(f"Request state updated successfully -> {self.__request_state}")
+            logging.info(
+                f"Request state updated successfully -> {self.__request_state}"
+            )
         except StopIteration:
             logging.warn("There was no matching request in requests list")
 
@@ -268,15 +280,15 @@ class Climate_controller:
 
             self.__update_request_state()
 
-            if self.__request_state == self.__successfull_request:
+            if self.__request_state == self.SUCCESSFULL_REQUEST:
                 logging.info("Request progess -> Request is successfull")
                 return
-            if self.__request_state in self.__failed_requests:
+            if self.__request_state in self.FAILED_REQUESTS:
                 raise RequestFailedError("Request progess -> Request has failed")
 
-            if self.__request_state == self.__in_progress_request:
+            if self.__request_state == self.IN_PROGRESS_REQUEST:
                 logging.info("Request progess -> Request is in progress")
-            elif self.__request_state == self.__queued_request:
+            elif self.__request_state == self.QUEUED_REQUEST:
                 logging.info("Request progess -> Request is queued")
 
             sleep(5)
