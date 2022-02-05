@@ -7,6 +7,10 @@ class Weconnect_vehicle_data_property():
         self.__desc = desc
 
     @property
+    def desc(self) -> str:
+        return self.__desc
+
+    @property
     def name(self) -> str:
         return self.__name
 

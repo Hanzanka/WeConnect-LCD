@@ -10,8 +10,8 @@ from vehicle_data_property import Weconnect_vehicle_data_property
 
 
 class Weconnect_battery_data(Weconnect_vehicle_data):
-    def __init__(self, vehicle: Vehicle, call_on_update: callable) -> None:
-        super().__init__(vehicle, call_on_update)
+    def __init__(self, vehicle: Vehicle) -> None:
+        super().__init__(vehicle, vehicle.domains["charging"])
         self.__import_data()
 
     def __import_data(self) -> None:
@@ -113,8 +113,9 @@ if __name__ == "__main__":
     for vin, car in weconnect.vehicles.items():
         vin = vin
         break
-    id3 = weconnect.vehicles[vin]
-    battery = Weconnect_battery_data(id3, lambda data: print(f"\nUpdate:\n{data}"))
+    car = weconnect.vehicles[vin]
+    battery = Weconnect_battery_data(car)
+    battery.add_update_function(lambda data: print(f"\nUpdate:\n{data}"))
     for key, item in battery.get_data().items():
         print(item)
     while True:

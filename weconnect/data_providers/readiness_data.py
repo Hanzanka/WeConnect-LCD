@@ -6,46 +6,39 @@ from time import sleep
 
 
 class Weconnect_readiness_data(Weconnect_vehicle_data):
-    
-    def __init__(self, vehicle: Vehicle, call_on_update: callable) -> None:
-        super().__init__(vehicle, call_on_update)
+    def __init__(self, vehicle: Vehicle) -> None:
+        super().__init__(vehicle, vehicle.domains["readiness"])
         self.__import_data()
-        
+
     def __import_data(self) -> None:
         readiness_data = self._vehicle.domains["readiness"]["readinessStatus"]
         self._data = self.__get_connection_state(readiness_data.connectionState)
         self._data = {
             **self._data,
-            **self.__get_warnings(readiness_data.connectionWarning)
+            **self.__get_warnings(readiness_data.connectionWarning),
         }
-        
+
     def __get_connection_state(self, connection_status) -> dict:
         connection_data = {}
         data = connection_status.isOnline
         connection_data[data.getGlobalAddress()] = Weconnect_vehicle_data_property(
-            "car online",
-            data.value,
-            "Car is connected to internet"
+            "car online", data.value, "Car is connected to internet"
         )
         data = connection_status.isActive
         connection_data[data.getGlobalAddress()] = Weconnect_vehicle_data_property(
-            "car active",
-            data.value,
-            "Car is in use"
+            "car active", data.value, "Car is in use"
         )
         return connection_data
-    
+
     def __get_warnings(self, warnings) -> dict:
         warnings_data = {}
         data = warnings.insufficientBatteryLevelWarning
         warnings_data[data.getGlobalAddress()] = Weconnect_vehicle_data_property(
-            "critical battery level",
-            data.value,
-            "Car battery is critically low"
+            "critical battery level", data.value, "Car battery is critically low"
         )
         return warnings_data
-    
-    
+
+
 if __name__ == "__main__":
     weconnect = WeConnect("username", "passwd")
     weconnect.login()
@@ -54,7 +47,8 @@ if __name__ == "__main__":
         vin = vin
         break
     car = weconnect.vehicles[vin]
-    readiness = Weconnect_readiness_data(car, lambda data: print(data))
+    readiness = Weconnect_readiness_data(car)
+    readiness.add_update_function(lambda data: print(f"\nUpdate:\n{data}"))
     for key, item in readiness.get_data().items():
         print(item)
     while True:

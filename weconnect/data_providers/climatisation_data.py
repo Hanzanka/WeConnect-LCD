@@ -9,8 +9,8 @@ from time import sleep
 
 
 class Weconnect_climate_data(Weconnect_vehicle_data):
-    def __init__(self, vehicle: Vehicle, call_on_update: callable) -> None:
-        super().__init__(vehicle, call_on_update)
+    def __init__(self, vehicle: Vehicle) -> None:
+        super().__init__(vehicle, vehicle.domains["climatisation"])
         self.__import_data()
 
     def __import_data(self) -> dict:
@@ -102,7 +102,8 @@ if __name__ == "__main__":
         vin = vin
         break
     car = weconnect.vehicles[vin]
-    climate = Weconnect_climate_data(car, lambda data: print(data))
+    climate = Weconnect_climate_data(car)
+    climate.add_update_function(lambda data: print(f"\nUpdate:\n{data}"))
     for key, item in climate.get_data().items():
         print(item)
     while True:
