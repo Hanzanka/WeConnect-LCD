@@ -13,11 +13,23 @@ class WeConnectLoggerError(Exception):
 
 class WeConnectCSVLogger:
     def log(data) -> None:
+        '''
+        Logs data from WeConnectVehicleDataProperty-object to csv file in path given in config.json
+
+        Args:
+            data (WeConnectVehicleDataProperty): [WeConnectVehicleDataProperty-object where data is logged from]
+
+        Raises:
+            WeConnectLoggerError: [Raised if creating dir to given path fails]
+            WeConnectLoggerError: [Raised if something fails when writing to .csv-file]
+        '''
+        logging.info(f"Logging data from property {data.name}")
         dir_path = Path(
             ConfigLoader.load_config()["paths"]["data"] + f"/{data.category}"
         )
         if not dir_path.is_dir():
             try:
+                logging.info(f"Creating new folder to {dir_path}")
                 os.mkdir(dir_path)
             except OSError as e:
                 logging.error(
@@ -35,7 +47,7 @@ class WeConnectCSVLogger:
                 writer = csv.writer(csv_file, delimiter=";")
                 if not exists:
                     writer.writerow(("value", "time", "date"))
-                logging.info("")
+                logging.info(f"Writing data to {file_path}")
                 writer.writerow(data.data_as_tuple())
         except Exception as e:
             logging.error(
