@@ -3,7 +3,7 @@ from weconnect.elements.vehicle import Vehicle
 from weconnect.addressable import AddressableLeaf, AddressableAttribute
 
 
-class Weconnect_vehicle_data:
+class WeconnectVehicleData:
     def __init__(self, vehicle: Vehicle, add_observer_to: AddressableLeaf) -> None:
         self._vehicle = vehicle
         
