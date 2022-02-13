@@ -23,7 +23,7 @@ class WeConnectCSVLogger:
             WeConnectLoggerError: [Raised if creating dir to given path fails]
             WeConnectLoggerError: [Raised if something fails when writing to .csv-file]
         '''
-        logging.info(f"Logging data from property {data.name}")
+        logging.info(f"Logging data from property '{data.name}'")
         dir_path = Path(
             ConfigLoader.load_config()["paths"]["data"] + f"/{data.category}"
         )
