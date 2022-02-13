@@ -4,7 +4,7 @@ from vw_weconnect_id.tools.weconnect_logger import WeConnectCSVLogger, WeConnect
 
 
 class WeconnectVehicleDataProperty:
-    def __init__(self, name, value, desc, category, unit=None) -> None:
+    def __init__(self, name, value, desc, category, unit=None, log_data=False) -> None:
         self.__name = name
         self.__value = str(value)
         self.__unit = unit
@@ -12,6 +12,7 @@ class WeconnectVehicleDataProperty:
         self.__category = category
         self.__time_updated = datetime.now().time().strftime("%H.%M:%S")
         self.__date_updated = datetime.now().date().strftime("%d.%m.%Y")
+        self.__log_data = log_data
         self.__log()
 
     @property
@@ -38,6 +39,8 @@ class WeconnectVehicleDataProperty:
         self.__log()
 
     def __log(self) -> None:
+        if not self.__log_data:
+            return
         try:
             WeConnectCSVLogger.log(self)
         except WeConnectLoggerError as e:
