@@ -1,11 +1,11 @@
 import json
 import logging
+from general_exception import GeneralException
 
 
-class ConfigLoaderError(Exception):
-    def __init__(self, message) -> None:
-        super().__init__(message)
-        self.message = message
+class ConfigLoaderError(GeneralException):
+    def __init__(self, message, fatal) -> None:
+        super().__init__(message, fatal)
 
 
 class ConfigLoader:
@@ -59,13 +59,13 @@ class ConfigLoader:
                 replacing_dict = replacing_dict[key]
             except KeyError as e:
                 logging.error(f"Key {key} is invalid")
-                raise ConfigLoaderError(f"Couldn't edit config file {e}")
+                raise ConfigLoaderError(f"Couldn't edit config file {e}", fatal=True)
         if property not in replacing_dict.keys():
             logging.error(f"{property} -property is not in config.json")
-            raise ConfigLoaderError(f"{property} -property is not in config.json")
+            raise ConfigLoaderError(f"{property} -property is not in config.json", fatal=False)
         replacing_dict[property] = value
         ConfigLoader.save_config(config_dict=config)
 
 
 if __name__ == "__main__":
-    print(ConfigLoader.load_config()["paths"]["data"])
+    print(ConfigLoader.load_config()["LED pins"]["weconnect update"]["id"])
