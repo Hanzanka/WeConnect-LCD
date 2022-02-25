@@ -3,3 +3,6 @@ class GeneralException(Exception):
         super().__init__()
         self.message = message
         self.fatal = fatal
+        
+    def __str__(self) -> str:
+        return self.message
