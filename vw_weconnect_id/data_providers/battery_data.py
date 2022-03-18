@@ -1,5 +1,3 @@
-from time import sleep
-from weconnect.weconnect import WeConnect
 from weconnect.elements.vehicle import Vehicle
 from weconnect.elements.battery_status import BatteryStatus
 from weconnect.elements.charging_status import ChargingStatus
@@ -39,7 +37,7 @@ class WeconnectBatteryData(WeconnectVehicleData):
         battery_status_data = {}
         data = battery_status.currentSOC_pct
         battery_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "soc_pct", data.value, "Battery charge level", "battery", "%", log_data=True
+            "soc_pct", data.value, "Battery", "battery", "%", log_data=True
         )
         data = battery_status.cruisingRangeElectric_km
         battery_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
@@ -53,17 +51,17 @@ class WeconnectBatteryData(WeconnectVehicleData):
         charging_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
             "charge time remaining",
             data.value,
-            "Time until charge is complete",
+            "Charge time",
             "battery",
             "min",
         )
         data = charging_status.chargingState
         charging_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "charge state", data.value.value, "Charging state", "battery", log_data=True
+            "charge state", data.value, "Charge state", "battery", log_data=True
         )
         data = charging_status.chargeMode
         charging_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "charge mode", data.value.value, "Charging mode", "battery"
+            "charge mode", data.value, "Charge mode", "battery"
         )
         data = charging_status.chargePower_kW
         charging_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
@@ -73,26 +71,30 @@ class WeconnectBatteryData(WeconnectVehicleData):
         charging_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
             "charge rate", data.value, "Charge rate", "battery", "km/h", log_data=True
         )
+        data = charging_status.chargeType
+        charging_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
+            "charge type", data.value, "Charge type", "battery", log_data=True
+        )
         return charging_status_data
 
     def __get_charging_settings(self, charging_settings: ChargingSettings) -> dict:
         charging_settings_data = {}
         data = charging_settings.maxChargeCurrentAC
         charging_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "max current", data.value.value, "Max AC charging current", "battery"
+            "max current", data.value, "Max AC charging current", "battery"
         )
         data = charging_settings.autoUnlockPlugWhenCharged
         charging_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
             "unlock plug",
-            data.value.value,
-            "Automatically unlock charging plug",
+            data.value,
+            "Unlock charging plug",
             "battery",
         )
         data = charging_settings.targetSOC_pct
         charging_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
             "target SoC pct",
             data.value,
-            "Target battery charge level percentage",
+            "Target battery",
             "battery",
             "%",
         )
@@ -103,30 +105,13 @@ class WeconnectBatteryData(WeconnectVehicleData):
         data = plug_status.plugConnectionState
         plug_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
             "plug connection status",
-            data.value.value,
-            "Plug connection status",
+            data.value,
+            "Plug status",
             "battery",
             log_data=True,
         )
         data = plug_status.plugLockState
         plug_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "plug lock status", data.value.value, "Charge plug lock status", "battery"
+            "plug lock status", data.value, "Plug locked", "battery"
         )
         return plug_status_data
-
-
-if __name__ == "__main__":
-    weconnect = WeConnect("username", "passwd")
-    weconnect.login()
-    vin = ""
-    for vin, car in weconnect.vehicles.items():
-        vin = vin
-        break
-    car = weconnect.vehicles[vin]
-    battery = WeconnectBatteryData(car)
-    battery.add_update_function(lambda data: print(f"\nUpdate:\n{data}"))
-    for key, item in battery.get_data().items():
-        print(item)
-    while True:
-        weconnect.update()
-        sleep(10)
