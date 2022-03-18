@@ -1,4 +1,3 @@
-from enum import Enum
 from weconnect.elements.vehicle import Vehicle
 from weconnect.addressable import AddressableLeaf, AddressableAttribute
 
@@ -6,10 +5,7 @@ from weconnect.addressable import AddressableLeaf, AddressableAttribute
 class WeconnectVehicleData:
     def __init__(self, vehicle: Vehicle, add_observer_to: AddressableLeaf) -> None:
         self._vehicle = vehicle
-        
         self._data = {}
-        
-        self.__call_on_update = []
         self.__add_observer(add_observer_to)
 
     def get_data(self) -> dict:
@@ -17,21 +13,12 @@ class WeconnectVehicleData:
         Get data from vehicle
 
         Returns:
-            dict: ["Dict that contains weconnect_vehicle_data_property objects, each on contains data about one property"]
+            dict: ["Dict that contains weconnect_vehicle_data_property objects"]
         """
         data = {}
-        for key, item in self._data.items():
-            data[item.name] = item
+        for item in self._data.values():
+            data[item.data_id] = item
         return data
-
-    def add_update_function(self, function: callable) -> None:
-        """
-        Add function which will be called when event is detected
-
-        Args:
-            function (callable): ["Function to call"]
-        """
-        self.__call_on_update.append(function)
 
     def __add_observer(self, add_observer_to: AddressableLeaf) -> None:
         add_observer_to.addObserver(
@@ -49,12 +36,5 @@ class WeconnectVehicleData:
         ):
             self.__update_value(element)
 
-    def __call_update_functions(self, address) -> None:
-        for function in self.__call_on_update:
-            function(self._data[address])
-
     def __update_value(self, element: AddressableAttribute) -> None:
-        value = element.value
-        address = element.getGlobalAddress()
-        self._data[address].value = value.value if isinstance(value, Enum) else value
-        self.__call_update_functions(address)
+        self._data[element.getGlobalAddress()].update_value(element.value)
