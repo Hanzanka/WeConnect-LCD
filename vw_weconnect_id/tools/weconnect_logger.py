@@ -23,7 +23,7 @@ class WeConnectCSVLogger:
             WeConnectLoggerError: [Raised if creating dir to given path fails]
             WeConnectLoggerError: [Raised if something fails when writing to .csv-file]
         '''
-        logging.info(f"Logging data from property '{data.name}'")
+        logging.info(f"Logging data from property '{data.data_id}'")
         dir_path = Path(
             ConfigLoader.load_config()["paths"]["data"] + f"/{data.category}"
         )
@@ -39,7 +39,7 @@ class WeConnectCSVLogger:
                     f"Error occurred while trying to create directory in path {dir_path}\n{e}"
                 )
         
-        file_path = Path(str(dir_path) + f"/{data.name.replace(' ', '_')}.csv")
+        file_path = Path(str(dir_path) + f"/{data.data_id.replace(' ', '_')}.csv")
         exists = file_path.is_file()
         
         try:
