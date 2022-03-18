@@ -1,4 +1,3 @@
-from weconnect.weconnect import WeConnect
 from weconnect.elements.vehicle import Vehicle
 from weconnect.elements.climatization_status import ClimatizationStatus
 from weconnect.elements.climatization_settings import ClimatizationSettings
@@ -7,7 +6,6 @@ from vw_weconnect_id.data_providers.vehicle_data import WeconnectVehicleData
 from vw_weconnect_id.data_providers.vehicle_data_property import (
     WeconnectVehicleDataProperty,
 )
-from time import sleep
 
 
 class WeconnectClimateData(WeconnectVehicleData):
@@ -33,13 +31,13 @@ class WeconnectClimateData(WeconnectVehicleData):
         climate_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
             "remaining time",
             data.value,
-            "Time remaining until climate control goes off",
+            "Climate control time remaining",
             "climate",
             "min",
         )
         data = climate_status.climatisationState
         climate_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "climate state", data.value.value, "Climate control status", "climate"
+            "climate state", data.value, "Climate control status", "climate"
         )
         return climate_status_data
 
@@ -100,20 +98,3 @@ class WeconnectClimateData(WeconnectVehicleData):
             "climate",
         )
         return window_heating_data
-
-
-if __name__ == "__main__":
-    weconnect = WeConnect("username", "passwd")
-    weconnect.login()
-    vin = ""
-    for vin, car in weconnect.vehicles.items():
-        vin = vin
-        break
-    car = weconnect.vehicles[vin]
-    climate = WeconnectClimateData(car)
-    climate.add_update_function(lambda data: print(f"\nUpdate:\n{data}"))
-    for key, item in climate.get_data().items():
-        print(item)
-    while True:
-        weconnect.update()
-        sleep(10)
