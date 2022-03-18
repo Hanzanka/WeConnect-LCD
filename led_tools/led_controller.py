@@ -1,258 +1,49 @@
-from enum import Enum
 import RPi.GPIO as GPIO
-from config_loader import ConfigLoader, ConfigLoaderError
-from threading import Timer, Event
+from config_loader import load_config, ConfigLoaderError
 import logging
-from time import sleep
-from general_exception import GeneralException
-import operator
-
-
-class LEDDriverError(GeneralException):
-    def __init__(self, message, fatal) -> None:
-        super().__init__(message, fatal)
-
-
-class LEDTrigger:
-    def __init__(self, led_driver, trigger, vehicle) -> None:
-
-        self.parent = led_driver
-
-        try:
-            self.__compare = trigger["compare"] == "True"
-            if self.__compare:
-                self.__trigger_value = trigger["trigger values"]["value"]
-                self.__trigger_mode = trigger["trigger values"]["target"]
-                self.__default_mode = trigger["default mode"]
-                self.__compare_operator = {
-                    "==": operator.eq,
-                    "<=": operator.le,
-                    ">=": operator.ge,
-                    "<": operator.lt,
-                    ">": operator.gt,
-                    "!=": operator.ne,
-                }[trigger["operator"]]
-            else:
-                self.__trigger_values = trigger["trigger values"]
-                self.__data_provider = vehicle.get_data_property(trigger["data id"])
-                self.__data_provider.add_callback_function(self.on_data_update)
-        except Exception as e:
-            raise LEDDriverError(e, True)
-
-    def on_data_update(self) -> None:
-        trigger_value = self.get_trigger_value()
-        if isinstance(trigger_value, tuple):
-            self.parent.on_trigger_update(trigger_value[0], trigger_value[1])
-        else:
-            self.parent.on_trigger_update(trigger_value)
-
-    def get_trigger_value(self):
-
-        if self.__compare:
-            data_value = float(self.__data_provider.value)
-            if self.__compare_operator(float(self.__trigger_value), data_value):
-                return self.__trigger_mode
-            else:
-                return self.__default_mode
-
-        data_value = self.__data_provider.value
-        if data_value not in self.__trigger_values:
-            return None
-
-        target = self.__trigger_values[data_value]["target"]
-        if target == "blink":
-            frequency = self.__trigger_values[data_value]["frequency"]
-            return target, frequency
-        return target
-
-
-class LEDDriver:
-    class LEDState(Enum):
-        ON = "on"
-        OFF = "off"
-        BLINKING = "blinking"
-
-    def __init__(
-        self, gpio_pin, LED_id, default_blinker_frequency, trigger, vehicle
-    ) -> None:
-
-        self.id = LED_id
-
-        self.__pin = gpio_pin
-        GPIO.setup(self.__pin, GPIO.OUT)
-        GPIO.output(self.__pin, GPIO.LOW)
-        self.__status = LEDDriver.LEDState.OFF
-
-        self.__default_blinker_frequency = default_blinker_frequency
-        self.__blinker_frequency = default_blinker_frequency
-        self.__blinker_event = Event()
-        self.__blinker_thread_timer = None
-
-        if trigger is not None and vehicle is not None:
-            self.__trigger_functions = {
-                "on": self.turn_on,
-                "off": self.turn_off,
-                "blink": self.blink,
-            }
-            self.__trigger = LEDTrigger(self, trigger, vehicle)
-            self.__load_led_mode()
-
-    def on_trigger_update(self, trigger_command) -> None:
-        if trigger_command is not None:
-            try:
-                if isinstance(trigger_command, tuple):
-                    self.__trigger_functions[trigger_command[0]](trigger_command[1])
-                else:
-                    self.__trigger_functions[trigger_command]()
-            except LEDDriverError as e:
-                logging.error(e)
-
-    def __load_led_mode(self) -> None:
-        self.__trigger.on_data_update()
-
-    def __turn_LED_off(self, looping=True) -> None:
-        try:
-            GPIO.output(self.__pin, GPIO.LOW)
-        except Exception:
-            try:
-                GPIO.setup(self.__pin, GPIO.OUT)
-            except Exception as e:
-                raise LEDDriverError(e, fatal=True)
-        if looping and not self.__blinker_event.is_set():
-            self.__blinker_thread_timer = Timer(
-                1 / self.__blinker_frequency / 2, self.__turn_LED_on
-            )
-            self.__blinker_thread_timer.start()
-
-    def __turn_LED_on(self, looping=True) -> None:
-        try:
-            GPIO.output(self.__pin, GPIO.HIGH)
-        except Exception:
-            try:
-                GPIO.setup(self.__pin, GPIO.OUT)
-            except Exception as e:
-                raise LEDDriverError(e, fatal=True)
-        if looping:
-            self.__blinker_thread_timer = Timer(
-                1 / self.__blinker_frequency / 2, self.__turn_LED_off
-            )
-            self.__blinker_thread_timer.start()
-
-    def blink(self, frequency=None) -> None:
-        if self.__status == LEDDriver.LEDState.BLINKING:
-            logging.info(f"Blinker on led {self.id} is already on, returning")
-            return
-        
-        logging.info(f"Starting led blinker on led {self.id}")
-        override_needed = self.__status == LEDDriver.LEDState.ON
-        if override_needed:
-            self.turn_off(override_mode=True)
-
-        self.__blinker_event.clear()
-        self.__blinker_frequency = (
-            self.__default_blinker_frequency if frequency is None else frequency
-        )
-        self.__status = LEDDriver.LEDState.BLINKING
-        self.__turn_LED_on()
-
-    def stop_blinking(self) -> None:
-        if (
-            self.__status != LEDDriver.LEDState.BLINKING
-            and not self.__blinker_thread_timer.is_alive()
-        ):
-            logging.info(f"Blinker on led {self.id} is already off")
-            return
-        logging.info(f"Stopping blinker on led {self.id}")
-        self.__status = LEDDriver.LEDState.OFF
-        self.__blinker_event.set()
-        sleep(1 / self.__blinker_frequency)
-        if self.__blinker_thread_timer.is_alive():
-            logging.info(
-                f"Thread timer on led {self.id} is still on, shutting it down manually"
-            )
-            self.__blinker_thread_timer.cancel()
-            if GPIO.input(self.__pin) == 1:
-                GPIO.output(self.__pin, GPIO.LOW)
-        logging.info(f"Blinker on led {self.id} is successfully shut down")
-
-    def turn_on(self) -> None:
-        logging.info(f"Turning on led {self.id}")
-        override_needed = self.__status == LEDDriver.LEDState.BLINKING
-        if override_needed:
-            logging.info(
-                f"Blinker on led {self.id} is enabled and override mode is enabled. Shutting it down. "
-            )
-            self.stop_blinking()
-        self.__status = LEDDriver.LEDState.ON
-        self.__turn_LED_on(looping=False)
-
-    def turn_off(self) -> None:
-        if self.__state == LEDDriver.LEDState.OFF:
-            logging.info(f"LED on pin {self.__pin} is already off")
-            return
-        if self.__status == LEDDriver.LEDState.BLINKING:
-            logging.info(
-                f"Blinker on led {self.id} is enabled, shutting it down"
-            )
-            self.stop_blinking()
-        logging.info(f"Turning off led {self.id}")
-        self.__status = LEDDriver.LEDState.OFF
-        self.__turn_LED_off(looping=False)
-
-    def set_frequency(self, frequency) -> None:
-        if frequency <= 0:
-            raise ValueError("Frequency must be greater than zero")
-        self.__blinker_frequency = frequency
+from led_driver import LEDDriver, LEDDriverError
 
 
 class IndicatorLEDController:
     def __init__(self) -> None:
+        self.__setup_gpio()
+        self.__indicator_LEDs = {}
+        config = load_config()
+        self.__used_pins = config["used pins"]
+        self.__used_ids = list(config["LED pins"].keys())
+
+    def __setup_gpio(self) -> None:
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
-        self.__indicator_LEDs = {}
-        self.setup_leddrivers(independent_leds_setup=True)
 
-    def setup_leddrivers(self, independent_leds_setup=False, vehicle=None) -> None:
-        logging.info(
-            f"Initializing {'independent leds' if independent_leds_setup else 'dependent leds'}"
-        )
+    def setup_vehicle_dependent_leddrivers(self, vehicle) -> None:
+        """
+        Used to setup leddrivers from config.json-file
 
-        self.__indicator_LEDs = {
-            **self.__indicator_LEDs,
-            **self.__import_leddrivers(independent_leds_setup, vehicle),
-        }
+        Args:
+            vehicle (VolkswagenIdVehicle): Class used to access VehicleDataProperty-objects needed in leddriver setup
+        """
+        logging.info("Initializing vehicle dependent leds")
 
-    def __import_leddrivers(self, independent_leds_setup=False, vehicle=None) -> dict:
-        logging.info(
-            f"Importing LED configs for {'independent leds' if independent_leds_setup else 'dependent leds'}"
-        )
-        LEDs = {}
-        led_configs = ConfigLoader.load_config()["LED pins"]
+        led_configs = load_config()["LED pins"]
 
         for LED_id, LED_config in led_configs.items():
-            if independent_leds_setup:
-                if "trigger" in LED_config:
-                    continue
-            else:
-                if "trigger" not in LED_config:
-                    continue
-            LEDs[LED_id] = self.__initialize_leddriver(LED_config, vehicle)
+            self.__indicator_LEDs[LED_id] = self.__initialize_leddriver_from_config(
+                LED_config, vehicle
+            )
 
-        return LEDs
-
-    def __initialize_leddriver(self, LED_config, vehicle) -> LEDDriver:
+    def __initialize_leddriver_from_config(self, LED_config, vehicle) -> LEDDriver:
 
         try:
             LED_id = LED_config["id"]
             LED_pin = LED_config["pin"]
             LED_default_frequency = LED_config["default frequency"]
+            trigger = LED_config["trigger"]
         except KeyError:
-            raise ConfigLoaderError("No led id found", fatal=True)
+            raise ConfigLoaderError("Failed to load config", fatal=True)
 
-        logging.info(f"Initializing led: {LED_id}")
+        logging.info(f"Initializing led with id '{LED_id}'")
 
-        trigger = None if "trigger" not in LED_config else LED_config["trigger"]
-        
         driver = LEDDriver(
             gpio_pin=LED_pin,
             LED_id=LED_id,
@@ -261,6 +52,48 @@ class IndicatorLEDController:
             vehicle=vehicle,
         )
 
+        return driver
+
+    def create_independent_leddriver(
+        self, pin: int, led_id, default_frequency
+    ) -> LEDDriver:
+        '''
+        Used to create leddriver without triggers
+
+        Args:
+            pin (int): Pin where the led is connected
+            led_id (Any): Id of the led which is used to access the leddriver from IndicatorLEDController
+            default_frequency (Int / float): Default frequency of the led blinker
+
+        Raises:
+            ValueError: Raised if trying to use pin which is already in use
+            ValueError: Raised if trying to use id which is already in use
+            ValueError: Raised if given frequency is not greater than zero
+
+        Returns:
+            LEDDriver: Driver which can be used to control the led created
+        '''
+        if pin in self.__used_pins:
+            raise ValueError(
+                f"Pin '{pin}' is already in use, try using another. Currently used pins are: {self.__used_pins}"
+            )
+        if led_id in self.__used_ids:
+            raise ValueError(
+                f"LED id '{led_id}' is already in use, try using another. Currently used ids are: {self.__used_ids}"
+            )
+        if default_frequency <= 0:
+            raise ValueError(
+                f"Given frequency of {default_frequency}Hz is below zero. Frequency must be greater than zero"
+            )
+
+        self.__used_ids.append(led_id)
+        self.__used_pins.append(pin)
+
+        driver = LEDDriver(
+            gpio_pin=pin, LED_id=led_id, default_blinker_frequency=default_frequency
+        )
+
+        self.__indicator_LEDs[led_id] = driver
         return driver
 
     def turn_LED_on(self, LED_id) -> None:
@@ -285,7 +118,9 @@ class IndicatorLEDController:
         try:
             self.__indicator_LEDs[LED_id].blink(frequency)
         except LEDDriverError as e:
-            logging.error(f"Couldn't turn on blinker on led {LED_id}. Original error: {e}")
+            logging.error(
+                f"Couldn't turn on blinker on led {LED_id}. Original error: {e}"
+            )
 
     def stop_blinking(self, LED_id) -> None:
         if LED_id not in self.__indicator_LEDs.keys():
