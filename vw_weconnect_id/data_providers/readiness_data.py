@@ -3,8 +3,6 @@ from weconnect.elements.vehicle import Vehicle
 from vw_weconnect_id.data_providers.vehicle_data_property import (
     WeconnectVehicleDataProperty,
 )
-from weconnect.weconnect import WeConnect
-from time import sleep
 
 
 class WeconnectReadinessData(WeconnectVehicleData):
@@ -43,20 +41,3 @@ class WeconnectReadinessData(WeconnectVehicleData):
             log_data=True,
         )
         return warnings_data
-
-
-if __name__ == "__main__":
-    weconnect = WeConnect("username", "passwd")
-    weconnect.login()
-    vin = ""
-    for vin, car in weconnect.vehicles.items():
-        vin = vin
-        break
-    car = weconnect.vehicles[vin]
-    readiness = WeconnectReadinessData(car)
-    readiness.add_update_function(lambda data: print(f"\nUpdate:\n{data}"))
-    for key, item in readiness.get_data().items():
-        print(item)
-    while True:
-        weconnect.update()
-        sleep(10)
