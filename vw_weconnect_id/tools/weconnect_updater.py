@@ -1,10 +1,13 @@
 from weconnect.weconnect import WeConnect
 from apscheduler.schedulers.background import BackgroundScheduler
 from config_loader import load_config
-import logging
+from logging import Logger
 from weconnect.domain import Domain
 from datetime import datetime, time
-from led_tools.led_controller import IndicatorLEDController, LEDDriverError
+from led_tools.led_controller import IndicatorLEDController
+
+
+logger = Logger("main logger")
 
 
 class WeConnectUpdater:
@@ -14,7 +17,6 @@ class WeConnectUpdater:
     def __init__(self, weconnect: WeConnect, led_controller: IndicatorLEDController, start_on_init=True) -> None:
         self.__weconnect = weconnect
         self.__update_led = led_controller.create_independent_leddriver(pin=5, led_id="WECONNECT UPDATE", default_frequency=10.0)
-        self.update_weconnect([Domain.ALL])
         self.__scheduler = BackgroundScheduler(timezone="Europe/Helsinki")
         self.__scheduler.start()
         self.__config = load_config()["update rate"]
@@ -22,7 +24,7 @@ class WeConnectUpdater:
             self.start()
 
     def add_new_scheduler(self, id: str, update_values: list, callback_function: callable) -> None:
-        logging.info("Enabling climatecontroller scheduler")
+        logger.info(f"Adding new update scheduler with id '{id}'")
         self.__scheduler.add_job(
             self.update_weconnect,
             trigger="interval",
@@ -32,33 +34,25 @@ class WeConnectUpdater:
         )
 
     def remove_scheduler(self, id: str) -> None:
-        logging.info("Enabling climatecontroller scheduler")
         try:
+            logger.info(f"Removing update scheduler with id '{id}'")
             self.__scheduler.remove_job(job_id=id)
         except KeyError:
-            logging.error("Couldn't find job with key 'CLIMATE'")
+            logger.error(f"Couldn't find update scheduler with id '{id}'")
 
-    def update_weconnect(self, update_domains: list, callback_function=None) -> None:
-        logging.info("Updating weconnect")
-        try:
-            self.__update_led.blink()
-        except LEDDriverError as e:
-            logging.error(e.message)
+    def update_weconnect(self, update_domains: list) -> None:
+        logger.info("Updating weconnect data")
+        self.__update_led.blink()
         self.__weconnect.update(
             updatePictures=False,
             updateCapabilities=(True if Domain.ALL in update_domains else False),
             selective=update_domains,
         )
-        try:
-            self.__update_led.stop_blinking()
-        except LEDDriverError as e:
-            logging.error(e.message)
-        if callback_function is not None:
-            callback_function()
+        self.__update_led.stop_blinking()
 
-    def __add_daytime_scheduler(self) -> None:
+    def add_daytime_scheduler(self) -> None:
         self.__remove_nighttime_scheduler()
-        logging.info("Enabling daytime scheduler")
+        logger.info("Enabling daytime update scheduler")
         self.__scheduler.add_job(
             self.update_weconnect,
             "interval",
@@ -68,15 +62,15 @@ class WeConnectUpdater:
         )
 
     def __remove_daytime_scheduler(self) -> None:
-        logging.info("Disabling daytime scheduler")
+        logger.info("Disabling daytime update scheduler")
         try:
             self.__scheduler.remove_job(job_id="DAYTIME")
         except KeyError:
-            logging.error("DAYTIME job was not found, this is normal at startup")
+            logger.error("DAYTIME update scheduler was not found, this is normal at startup")
 
-    def __add_nighttime_scheduler(self) -> None:
+    def add_nighttime_scheduler(self) -> None:
         self.__remove_daytime_scheduler()
-        logging.info("Enabling nighttime scheduler")
+        logger.info("Enabling nighttime update scheduler")
         self.__scheduler.add_job(
             self.update_weconnect,
             "interval",
@@ -86,14 +80,14 @@ class WeConnectUpdater:
         )
 
     def __remove_nighttime_scheduler(self) -> None:
-        logging.info("Disabling nighttime scheduler")
+        logger.info("Disabling nighttime update scheduler")
         try:
             self.__scheduler.remove_job(job_id="NIGHTTIME")
         except KeyError:
-            logging.error("NIGHTTIME job was not found, this is normal at startup")
+            logger.error("NIGHTTIME update scheduler was not found, this is normal at startup")
 
     def __add_total_update_scheduler(self) -> None:
-        logging.info("Enabling total update scheduler")
+        logger.info("Enabling total update scheduler")
         self.__scheduler.add_job(
             self.update_weconnect,
             "interval",
@@ -104,14 +98,14 @@ class WeConnectUpdater:
 
     def __add_switcher_schedulers(self) -> None:
         self.__scheduler.add_job(
-            self.__add_daytime_scheduler,
+            self.add_daytime_scheduler,
             trigger="cron",
             minute=0,
             hour=7,
             id="DAYTIME_ENABLER",
         )
         self.__scheduler.add_job(
-            self.__add_nighttime_scheduler,
+            self.add_nighttime_scheduler,
             trigger="cron",
             minute=0,
             hour=23,
@@ -123,8 +117,8 @@ class WeConnectUpdater:
         end = time(23, 00, 0)
         now = datetime.now().time()
         if start <= now and now <= end:
-            self.__add_daytime_scheduler()
+            self.add_daytime_scheduler()
         else:
-            self.__add_nighttime_scheduler()
+            self.add_nighttime_scheduler()
         self.__add_total_update_scheduler()
         self.__add_switcher_schedulers()
