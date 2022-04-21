@@ -1,7 +1,7 @@
 from vw_weconnect_id.data_providers.vehicle_data_property import (
     WeconnectVehicleDataProperty,
 )
-from .lcd_item import LCDItem
+from display.lcd_item import LCDItem
 from enum import Enum
 
 
@@ -10,7 +10,13 @@ class WeConnectLCDItem(LCDItem):
         SECONDARY = "secondary"
         PRIMARY = "primary"
 
-    def __init__(self, data_provider: WeconnectVehicleDataProperty, title, second_title=None, translation_dict=None) -> None:
+    def __init__(
+        self,
+        data_provider: WeconnectVehicleDataProperty,
+        title,
+        second_title=None,
+        translation_dict=None,
+    ) -> None:
         super().__init__(title)
         self.__second_title = second_title
         self.__mode = WeConnectLCDItem.WeConnetLCDItemMode.PRIMARY
@@ -25,7 +31,9 @@ class WeConnectLCDItem(LCDItem):
             if self.__mode == WeConnectLCDItem.WeConnetLCDItemMode.SECONDARY
             else self._title
         )
-        value = self.__data_provider.get_value_with_unit(translation_dict=self.__translation_dict)
+        value = self.__data_provider.get_value_with_unit(
+            translation_dict=self.__translation_dict
+        )
         indentation = (19 if self._selected else 20) - len(title)
         self._content = f"{'>' if self._selected else ''}{title}{value:>{indentation}}"
 
