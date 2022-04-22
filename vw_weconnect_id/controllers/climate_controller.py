@@ -1,13 +1,12 @@
 from weconnect.elements.control_operation import ControlOperation
 from weconnect.elements.climatization_status import ClimatizationStatus
-from weconnect.weconnect import WeConnect
 import logging
 from weconnect.elements.generic_status import GenericStatus
 import numpy
 from vw_weconnect_id.tools.weconnect_updater import WeConnectUpdater
 from weconnect.domain import Domain
 from general_exception import GeneralException
-from led_tools.led_controller import IndicatorLEDController
+from led_tools.led_driver import create_led_driver
 
 
 class ClimateControllerCompabilityError(GeneralException):
@@ -80,14 +79,12 @@ class ClimateController:
     QUEUED_REQUEST = GenericStatus.Request.Status.QUEUED
     IN_PROGRESS_REQUEST = GenericStatus.Request.Status.IN_PROGRESS
 
-    def __init__(
-        self, vehicle, updater: WeConnectUpdater, led_controller: IndicatorLEDController
-    ) -> None:
+    def __init__(self, vehicle, updater: WeConnectUpdater) -> None:
 
         self.__vehicle = vehicle.get_weconnect_vehicle()
         self.__updater = updater
-        self.__operation_led = led_controller.create_independent_leddriver(
-            pin=26, led_id="CLIMATE OPERATION", default_frequency=1
+        self.__operation_led = create_led_driver(
+            led_pin=26, led_id="CLIMATE OPERATION", default_frequency=1
         )
         self.__climate_state = vehicle.get_data_property("climate state")
         self.__climate_settings = self.__vehicle.domains["climatisation"][
@@ -101,9 +98,8 @@ class ClimateController:
         self.__request_id = None
         self.__request_status = None
         self.__operation_running = False
-        self.__call_when_ready = None
 
-    def start(self, call_when_ready: callable) -> None:
+    def start(self) -> None:
         """
         Start climatisation control of the car
 
@@ -114,12 +110,11 @@ class ClimateController:
             e: [Could be any exception given in this module]
         """
         try:
-            self.__call_when_ready = call_when_ready
             self.__make_request(ControlOperation.START)
         except Exception as e:
             raise e
 
-    def stop(self, call_when_ready: callable) -> None:
+    def stop(self) -> None:
         """
         Stop climatisation control of the car
 
@@ -130,7 +125,6 @@ class ClimateController:
             e: [Could be any exception given in this module]
         """
         try:
-            self.__call_when_ready = call_when_ready
             self.__make_request(ControlOperation.STOP)
         except Exception as e:
             raise e
@@ -193,7 +187,7 @@ class ClimateController:
             )
         self.__request_id = new_ids[0]
         logging.info(f"Found our request id -> {self.__request_id}")
-        self.update_request_state()
+        self.__update_request_state()
 
     def __check_compability(self):
         logging.info("Checking compability for climate control")
@@ -231,7 +225,11 @@ class ClimateController:
         except ClimateControlAlreadyOnError as e:
             raise e
 
-        self.__operation_led.turn_on()
+        if operation == ControlOperation.START:
+            self.__operation_led.turn_on()
+        else:
+            self.__operation_led.blink(frequency=2)
+
         ids_before = self.__get_current_request_ids(update=True)
 
         logging.info(f"Creating new request -> {operation}")
@@ -245,24 +243,33 @@ class ClimateController:
         except FailedToIdentifyRequestError as e:
             raise e
 
-        self.__updater.add_new_scheduler(id="CLIMATE", update_values=[Domain.CLIMATISATION], callback_function=self.update_request_state)
+        self.__updater.add_new_scheduler(
+            id="CLIMATE",
+            update_values=[Domain.CLIMATISATION],
+            interval=15,
+            callback_function=self.__update_request_state,
+            called_from=self,
+            at_lost_connection=self.__at_connection_failure,
+        )
 
     def __finish_operation(self, successfull: bool) -> None:
         logging.info("Finishing climate controller operation")
-        self.__updater.remove_scheduler()
+        self.__updater.remove_scheduler(id="CLIMATE", called_from=self)
         self.__operation_running = False
-        self.__operation_led.turn_off()
-        self.__call_when_ready(successfull)
         self.__request_status = None
         self.__request_id = None
-        self.__call_when_ready = None
+        self.__operation_led.turn_off()
 
-    def update_request_state(self) -> None:
+    def __at_connection_failure(self) -> None:
+        if self.__operation_running:
+            self.__finish_operation(successfull=False)
+
+    def __update_request_state(self) -> None:
         if not self.__operation_running:
             logging.error(
                 "There are no climate controller operations running, but update_request_state was still called"
             )
-            self.__updater.remove_scheduler(id="CLIMATE")
+            self.__updater.remove_scheduler(id="CLIMATE", called_from=self)
             return
         logging.info("Updating request status")
         try:
@@ -280,21 +287,3 @@ class ClimateController:
         elif self.__request_status in self.FAILED_REQUESTS:
             logging.error("Request progess -> Request has failed")
             self.__finish_operation(successfull=False)
-
-
-if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
-    weconnect = WeConnect("username", "passwd")
-    weconnect.login()
-    vin = ""
-    for vin, car in weconnect.vehicles.items():
-        vin = vin
-        break
-    car = weconnect.vehicles[vin]
-    car.enableTracker()
-    control = ClimateController(car)
-    control.stop(
-        lambda successfull: print(
-            f"Operation is completed, result -> {'Successfull' if successfull else 'Failed'}"
-        )
-    )
