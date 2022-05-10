@@ -1,11 +1,8 @@
 import json
-import logging
-from general_exception import GeneralException
 
 
-class ConfigLoaderError(GeneralException):
-    def __init__(self, message, fatal) -> None:
-        super().__init__(message, fatal)
+class ConfigLoaderError(Exception):
+    pass
 
 
 def load_config() -> dict:
@@ -22,7 +19,7 @@ def load_config() -> dict:
         with open("config.json", "r") as config_file:
             return json.load(config_file)
     except FileNotFoundError as e:
-        raise ConfigLoaderError(e, fatal=True)
+        raise ConfigLoaderError(e)
 
 
 def save_config(config_dict=None) -> None:
@@ -44,7 +41,7 @@ def save_config(config_dict=None) -> None:
                 separators=(",", ": "),
             )
     except Exception as e:
-        raise ConfigLoaderError(e, fatal=True)
+        raise ConfigLoaderError(e)
 
 
 def edit_config(keys: list, property: str, value) -> None:
@@ -63,12 +60,10 @@ def edit_config(keys: list, property: str, value) -> None:
         try:
             replacing_dict = replacing_dict[key]
         except KeyError as e:
-            logging.error(f"Key {key} is invalid")
-            raise ConfigLoaderError(f"Couldn't edit config file {e}", fatal=True)
+            raise ConfigLoaderError(f"Couldn't edit config file {e}")
         
     if property not in replacing_dict.keys():
-        logging.error(f"{property} -property is not in config.json")
-        raise ConfigLoaderError(f"{property} -property is not in config.json", fatal=True)
+        raise ConfigLoaderError(f"{property} -property is not in config.json")
     
     replacing_dict[property] = value
     save_config(config_dict=config)
