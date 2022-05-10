@@ -38,7 +38,7 @@ class LCDScene:
         else:
             for item in self.__items:
                 item.set_mode(WeConnectLCDItem.WeConnetLCDItemMode.SECONDARY)
-        self.refresh(bypass_screensaver=True)
+        self.refresh()
 
     def exit(self) -> None:
         if self.__title is None:
@@ -47,15 +47,13 @@ class LCDScene:
             for item in self.__items:
                 item.set_mode(WeConnectLCDItem.WeConnetLCDItemMode.PRIMARY)
 
-    def refresh(self, by_user=False) -> list:
+    def refresh(self) -> list:
         content = [
             item.content for item in self.__items[self.__startpoint : self.__endpoint]
         ]
         if self.__title is not None:
             content = [self.__title] + content
-        self.__lcd_scene_controller.refresh(
-            self.__id, content, bypass_screensaver=by_user
-        )
+        self.__lcd_scene_controller.refresh(self.__id, content)
 
     def __select_item(self) -> None:
         self.__items[self.__selected_index].select()
@@ -72,7 +70,7 @@ class LCDScene:
             self.__down()
         if self.__title is None:
             self.__select_item()
-        self.refresh(by_user=True)
+        self.refresh()
 
     def __up(self) -> None:
         if self.__title is None:

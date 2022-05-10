@@ -23,13 +23,11 @@ class WeConnectLCDMessage:
         self.__message_base = message_config["message base"]
         self.__message_time = message_config["time"]
         self.__translate = message_config["translate"]
-        if self.__translate:
-            self.__translation_dict = config["translations"][message_config["data provider id"]]
         self.__data_provider = vehicle.get_data_property(message_config["data provider id"])
         self.__data_provider.add_callback_function(self.on_data_update)
 
     def on_data_update(self) -> None:
-        value = self.__data_provider.get_value_with_unit(self.__translation_dict)
+        value = self.__data_provider.get_value_with_unit(translate=self.__translate)
         if self.__selective_messages:
             if self.__data_provider.absolute_value == self.__trigger_value:
                 self.__display_message(value)
