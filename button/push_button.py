@@ -1,9 +1,11 @@
 from enum import Enum
 import logging
 from threading import Event, Lock, Timer
-from time import sleep
 import RPi.GPIO as GPIO
 from threading import Thread
+
+
+logger = logging.getLogger("button")
 
 
 class PushButton:
@@ -22,6 +24,7 @@ class PushButton:
         long_press_callback=None,
         long_press_time=None,
     ) -> None:
+        logger.debug(f"Initializing button with ID {button_id}")
         self.__button_id = button_id
         self.__pin = pin
 
@@ -60,6 +63,7 @@ class PushButton:
             if self.__release_lock.locked():
                 self.__release_lock.release()
             return
+        logger.debug(f"Released press lock from button ID {self.__button_id}")
         self.__press_lock.release()
 
     def __wait_for_release(self) -> ButtonAction:
@@ -83,36 +87,24 @@ class PushButton:
         return PushButton.ButtonAction.CLICK
 
     def __released(self) -> None:
-        logging.info(f"Button '{self.__button_id}' was released")
+        logger.debug(f"Button with ID {self.__button_id} was released")
         self.__button_event.set()
 
     def __pressed(self) -> None:
-        logging.info(f"Button '{self.__button_id}' was pressed")
-        
+        logger.debug(f"Button with ID {self.__button_id} was pressed")
         self.__button_event.clear()
 
         button_action = self.__wait_for_release()
 
         if button_action == PushButton.ButtonAction.INVALID:
-            logging.info("Invalid button action")
+            logger.debug(f"Button ID {self.__button_id} got invalid action")
             return
 
         if button_action == PushButton.ButtonAction.CLICK:
+            logger.debug(f"Button ID {self.__button_id} was pressed")
             self.__click_callback()
             return
 
         if button_action == PushButton.ButtonAction.HOLD:
+            logger.debug(f"Button ID {self.__button_id} was long pressed")
             self.__long_press_callback()
-
-
-if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setwarnings(False)
-    p = PushButton(
-        pin=21,
-        button_id="TEST",
-        click_callback=lambda: print("ok"),
-        double_click_prevention_time=1,
-    )
-    sleep(6000)

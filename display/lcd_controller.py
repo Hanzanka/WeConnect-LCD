@@ -1,10 +1,12 @@
-from datetime import datetime
 import logging
 import traceback
 from RPLCD.i2c import CharLCD
 from threading import Event, Timer
 import textwrap
 from queue import Queue
+
+
+logger = logging.getLogger("display")
 
 
 class LCDController:
@@ -14,13 +16,12 @@ class LCDController:
     """
 
     def __init__(self, lcd_scene_controller) -> None:
-
+        logger.debug("Initializing lcd controller")
         self.__lcd = CharLCD(
             i2c_expander="PCF8574", address=0x27, port=1, charmap="A00", cols=20, rows=4
         )
 
-        self.__screensaver_enabled = False
-        self.__screensaver_timer = Timer(30, self.enable_screensaver)
+        self.__darkmode_timer = Timer(30, self.backlight_off)
 
         self.__load_custom_characters()
 
@@ -33,9 +34,8 @@ class LCDController:
 
         self.__lcd_scene_controller = lcd_scene_controller
         self.__interactions_enabled = True
-        self.__last_interaction = datetime.now()
 
-        self.display_message("WeConnect-LCD Is starting")
+        self.display_message("WeConnect-LCD Is Starting")
 
     def __ready(self) -> None:
         self.__print_event.set()
@@ -44,7 +44,7 @@ class LCDController:
         self.__print_event.wait()
         self.__print_event.clear()
 
-    def __into_string(self, content) -> str:
+    def __content_into_string(self, content) -> str:
         if len(max(content, key=len)) > 20:
             raise ValueError("One of the items given is too long")
         content_string = "".join(item + (20 - len(item)) * " " for item in content)
@@ -53,51 +53,41 @@ class LCDController:
         content_string += "".join(" " * 20 for _ in range(4 - len(content)))
         return content_string
 
-    def update_lcd(self, content: list, bypass_screensaver=False) -> None:
+    def update_lcd(self, content: list) -> None:
+        logger.debug("Updating lcd content")
         if len(content) > 4:
-            raise ValueError("Given list is too long, max lenght is 4")
+            self.display_message("Content list is too long!")
 
-        if bypass_screensaver:
-            self.__cancel_screensaver()
-
-        if (
-            self.__screensaver_enabled and bypass_screensaver
-        ) or not self.__screensaver_enabled:
+        if not self.__message_on_screen:
             self.__wait()
             try:
                 self.__lcd.cursor_pos = (0, 0)
-                self.__lcd.write_string(self.__into_string(content))
-            except Exception:
-                logging.error(traceback.print_exc())
+                self.__lcd.write_string(self.__content_into_string(content))
+            except Exception as e:
+                logging.exception(e)
             self.__ready()
-        self.__queue_screensaver()
 
-    def wake_screen(self) -> None:
-        self.__wait()
-        try:
-            self.__lcd.display_enabled = True
-            self.__lcd.backlight_enabled = True
-            self.__screensaver_enabled = False
-            self.__interactions_enabled = True
-            logging.info("Screen saver is disabled")
-        except Exception:
-            logging.error(traceback.print_exc())
-        self.__ready()
-        self.__lcd_scene_controller.restore_last_view()
+    def backlight_on(self) -> None:
+        logger.debug("Turning lcd backlight on")
+        if self.__darkmode_timer.is_alive():
+            self.__darkmode_timer.cancel()
+        self.__lcd.backlight_enabled = True
+        self.__start_darkmode_timer()
 
-    def enable_screensaver(self) -> None:
-        if not self.__screensaver_enabled:
-            self.__wait()
-            try:
-                self.__screensaver_enabled = True
-                self.__lcd.backlight_enabled = False
-                self.__lcd.display_enabled = False
-                logging.info("Screen saver is enabled")
-            except Exception:
-                logging.error(traceback.print_exc())
-            self.__ready()
+    def backlight_off(self) -> None:
+        logger.debug("Turning lcd backlight off")
+        self.__lcd.backlight_enabled = False
+        
+    def __start_darkmode_timer(self, time=None) -> None:
+        if self.__darkmode_timer.is_alive():
+            self.__darkmode_timer.cancel()
+        self.__darkmode_timer = Timer(
+            (30 if time is None else time), self.backlight_off
+        )
+        self.__darkmode_timer.start()
 
     def __load_custom_characters(self) -> None:
+        logger.debug("Loading custom lcd characters")
         upper_left_corner = [0x00, 0x00, 0x00, 0x00, 0x0F, 0x08, 0x08, 0x08]
         bottom_left_corner = [0x08, 0x08, 0x08, 0x0F, 0x00, 0x00, 0x00, 0x00]
         upper_right_corner = [0x00, 0x00, 0x00, 0x00, 0x1E, 0x02, 0x02, 0x02]
@@ -134,23 +124,22 @@ class LCDController:
         self.__message_on_screen = False
         if self.__message_queue.empty():
             self.__interactions_enabled = True
-            if (datetime.now() - self.__last_interaction).total_seconds() > 30:
-                self.__queue_screensaver(time=0)
-            else:
-                self.__lcd_scene_controller.restore_last_view()
+            self.__lcd_scene_controller.restore_last_view()
         else:
             queued_msg = self.__message_queue.get()
             self.display_message(queued_msg[0], queued_msg[1])
 
     def display_message(self, message, time_on_screen=None) -> None:
+        logger.info(f"Queued new message with content '{message}'")
         if not self.__message_on_screen:
-            self.__cancel_screensaver()
+            
+            self.backlight_on()
             self.__wait()
             if time_on_screen is not None:
                 self.__interactions_enabled = False
                 self.__message_on_screen = True
+            
             self.__print_message_square()
-
             splitted = textwrap.wrap(message, 16)
             if len(splitted) == 1:
                 splitted.append(" " * 18)
@@ -168,8 +157,7 @@ class LCDController:
             if time_on_screen is not None:
                 self.__message_timer = Timer(time_on_screen, self.clear_message)
                 self.__message_timer.start()
-            else:
-                self.__queue_screensaver(5)
+
         else:
             if time_on_screen is not None:
                 self.__message_queue.put((message, time_on_screen))
@@ -177,21 +165,7 @@ class LCDController:
             else:
                 logging.info("Cannot queue messages with no onscreen time")
 
-    def __cancel_screensaver(self) -> None:
-        if self.__screensaver_timer.is_alive():
-            self.__screensaver_timer.cancel()
-            logging.info("Screensaver timer is disabled")
-        if self.__screensaver_enabled:
-            self.wake_screen()
-
-    def __queue_screensaver(self, time=None) -> None:
-        self.__screensaver_timer = Timer(
-            (30 if time is None else time), self.enable_screensaver
-        )
-        self.__screensaver_timer.start()
-        logging.info("Screensaver timer is started")
-
     @property
     def can_interact(self) -> bool:
-        self.__last_interaction = datetime.now()
+        self.backlight_on()
         return self.__interactions_enabled
