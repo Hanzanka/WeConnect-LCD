@@ -1,3 +1,4 @@
+from threading import Timer
 from weconnect.elements.control_operation import ControlOperation
 from weconnect.elements.climatization_status import ClimatizationStatus
 import logging
@@ -5,48 +6,46 @@ from weconnect.elements.generic_status import GenericStatus
 import numpy
 from vw_weconnect_id.tools.weconnect_updater import WeConnectUpdater
 from weconnect.domain import Domain
-from general_exception import GeneralException
-from led_tools.led_driver import create_led_driver
+from led.led_driver import create_led_driver
 
 
-class ClimateControllerCompabilityError(GeneralException):
-    def __init__(self, message, fatal) -> None:
-        super().__init__(message, fatal)
+logger = logging.getLogger("climate")
 
 
-class ClimateControlAlreadyOnError(GeneralException):
-    def __init__(self, message, fatal) -> None:
-        super().__init__(message, fatal)
+class ClimateControllerCompabilityError(Exception):
+    pass
 
 
-class NoMatchingIdError(GeneralException):
-    def __init__(self, message, fatal) -> None:
-        super().__init__(message, fatal)
+class ClimateControlAlreadyOnError(Exception):
+    pass
 
 
-class OperationAlreadyRunningError(GeneralException):
-    def __init__(self, message, fatal) -> None:
-        super().__init__(message, fatal)
+class NoMatchingIdError(Exception):
+    pass
 
 
-class RequestFailedError(GeneralException):
-    def __init__(self, message, fatal) -> None:
-        super().__init__(message, fatal)
+class OperationAlreadyRunningError(Exception):
+    pass
 
 
-class FailedToSetTemperatureError(GeneralException):
-    def __init__(self, message, fatal) -> None:
-        super().__init__(message, fatal)
+class RequestFailedError(Exception):
+    pass
 
 
-class FailedToIdentifyRequestError(GeneralException):
-    def __init__(self, message, fatal) -> None:
-        super().__init__(message, fatal)
+class FailedToSetTemperatureError(Exception):
+    pass
 
 
-class NoOperationRunningError(GeneralException):
-    def __init__(self, message, fatal) -> None:
-        super().__init__(message, fatal)
+class FailedToIdentifyRequestError(Exception):
+    pass
+
+
+class NoOperationRunningError(Exception):
+    pass
+
+
+class TemperatureOutOfRangeError(Exception):
+    pass
 
 
 class ClimateController:
@@ -80,7 +79,7 @@ class ClimateController:
     IN_PROGRESS_REQUEST = GenericStatus.Request.Status.IN_PROGRESS
 
     def __init__(self, vehicle, updater: WeConnectUpdater) -> None:
-
+        logger.debug("Initializing climate controller")
         self.__vehicle = vehicle.get_weconnect_vehicle()
         self.__updater = updater
         self.__operation_led = create_led_driver(
@@ -102,149 +101,138 @@ class ClimateController:
     def start(self) -> None:
         """
         Start climatisation control of the car
-
-        Args:
-            call_when_ready (callable): [Call this function when operation is successfull]
-
-        Raises:
-            e: [Could be any exception given in this module]
         """
-        try:
-            self.__make_request(ControlOperation.START)
-        except Exception as e:
-            raise e
+        logger.info("Requested to start climate control")
+        self.__make_request(ControlOperation.START)
 
     def stop(self) -> None:
         """
         Stop climatisation control of the car
-
-        Args:
-            call_when_ready (callable): [Call this function when operation is successfull]
-
-        Raises:
-            e: [Could be any exception given in this module]
         """
-        try:
-            self.__make_request(ControlOperation.STOP)
-        except Exception as e:
-            raise e
+        logger.info("Requested to stop climate control")
+        self.__make_request(ControlOperation.STOP)
 
     def set_temperature(self, temperature: float) -> None:
         """
-        Set climate control temperature
+        Set climate controller target temperature
 
         Args:
-            temperature (float): [Target temperature]
+            temperature (float): [Target temperature, must be between 15.5 and 30]
 
         Raises:
-            FailedToSetTemperatureError: [Setting temperature failed]
-            ValueError: [If temperature is out of acceptable range]
+            FailedToSetTemperatureError: [Setting target temperature failed]
+            TemperatureOutOfRangeError: [Given temperature is out of acceptable range]
         """
-
-        if temperature < 15.5 or 30 < temperature:
-            raise ValueError("Requested temperature is out of range")
-
-        self.__updater.update_weconnect([Domain.CLIMATISATION])
-
         try:
-            logging.info("Updating target temperature value")
-            if (
-                self.__climate_settings.targetTemperature_C is not None
-                and self.__climate_settings.targetTemperature_C.enabled
-            ):
-                self.__climate_settings.targetTemperature_C.value = temperature
-            elif (
-                self.__climate_settings.targetTemperature_K is not None
-                and self.__climate_settings.targetTemperature_K.enabled
-            ):
-                self.__climate_settings.targetTemperature_K.value = temperature + 273.15
-        except Exception:
-            raise FailedToSetTemperatureError("Failed to set target temperature")
-        else:
-            logging.info(
-                f"Successfully updated target temperature value -> {temperature}°C"
+            logger.info(
+                f"Requested to change climate control target temperature to {temperature}°C"
             )
+            if temperature < 15.5 or 30 < temperature:
+                error_string = f"Requested temperature of {temperature} is out of accepted range. Target temperature must be between 15.5 and 30"
+                logger.error(error_string)
+                raise TemperatureOutOfRangeError(error_string)
 
-    def __get_climate_control_state(
-        self, update=True
-    ) -> ClimatizationStatus.ClimatizationState:
-        if update:
             self.__updater.update_weconnect([Domain.CLIMATISATION])
+
+            try:
+                logger.debug(
+                    f"Updating climate controller target temperature value to {temperature}°C"
+                )
+                if (
+                    self.__climate_settings.targetTemperature_C is not None
+                    and self.__climate_settings.targetTemperature_C.enabled
+                ):
+                    self.__climate_settings.targetTemperature_C.value = temperature
+                elif (
+                    self.__climate_settings.targetTemperature_K is not None
+                    and self.__climate_settings.targetTemperature_K.enabled
+                ):
+                    self.__climate_settings.targetTemperature_K.value = (
+                        temperature + 273.15
+                    )
+            except Exception:
+                error_string = "Failed to set climate controller target temperature"
+                logger.error(error_string)
+                raise FailedToSetTemperatureError(error_string)
+            else:
+                logger.info(
+                    f"Successfully updated climate controller target temperature to {temperature}°C"
+                )
+        except Exception as e:
+            logging.getLogger("exception").exception(
+                "Failed to update climate controller target temperature value"
+            )
+            raise e
+
+    def __get_climate_control_state(self) -> ClimatizationStatus.ClimatizationState:
+        logger.debug("Checking current climate control status")
+        self.__updater.update_weconnect([Domain.CLIMATISATION])
         return self.__climate_state.absolute_value
 
-    def __get_current_request_ids(self, update=True) -> list:
-        if update:
-            self.__updater.update_weconnect([Domain.CLIMATISATION])
-        logging.info("Receiving current request ids")
-        return [str(requestId) for requestId in self.__climate_requests.keys()]
+    def __get_current_request_ids(self) -> list:
+        logger.debug("Receiving current climate request ids")
+        self.__updater.update_weconnect([Domain.CLIMATISATION])
+        return [str(request_id) for request_id in self.__climate_requests.keys()]
 
     def __get_request_id(self, ids_before, ids_after) -> str:
-        logging.info("Trying to identify our request id")
+        logger.debug("Trying to identify request id of the request")
         new_ids = numpy.setdiff1d(ids_after, ids_before)
         if len(new_ids) != 1:
             raise FailedToIdentifyRequestError(
-                f"Failed to identify id of our request, the list containing requestids is {'too long' if len(new_ids) > 1 else 'empty'}"
+                f"Failed to identify id of our request, the list containing newly added request ids is {'too long' if len(new_ids) > 1 else 'empty'}"
             )
         self.__request_id = new_ids[0]
-        logging.info(f"Found our request id -> {self.__request_id}")
+        logger.debug(f"Id of the request is {self.__request_id}")
         self.__update_request_state()
 
     def __check_compability(self):
-        logging.info("Checking compability for climate control")
+        logger.debug("Checking vehicle compability for climate controller actions")
         compatible = (
             self.__climate_controls is not None and self.__climate_controls.enabled
         )
         if not compatible:
             raise ClimateControllerCompabilityError(
-                "Car is not compatible with climate controller"
+                "Car is not compatible with climate controller actions"
             )
-        logging.info("Compability check -> Success")
+        logger.debug("Car is compitable with climate controller actions")
 
     def __check_climate_state(self, operation: ControlOperation):
-        logging.info("Checking if climate control is in acceptable state")
-        state = self.__get_climate_control_state(update=True)
+        logger.debug(
+            "Checking if climate control of the car is in acceptable state for the request"
+        )
+        state = self.__get_climate_control_state()
         acceptable_state = state not in self.DISALLOWED_CLIMATE_STATES[operation]
         if not acceptable_state:
             raise ClimateControlAlreadyOnError(
-                "Climate control is already in requested state"
+                f"Climate control is already in requested state of {state}"
             )
-        logging.info("Climate control state -> Acceptable")
+        logger.debug("Climate control of the car is in acceptable state")
 
     def __make_request(self, operation: ControlOperation):
-
+        logger.debug("Checking requirements for the request to be able to continue")
         if self.__operation_running:
-            raise OperationAlreadyRunningError("Control operation is already running")
-
-        try:
-            self.__check_compability()
-        except ClimateControllerCompabilityError as e:
-            raise e
-
-        try:
-            self.__check_climate_state(operation)
-        except ClimateControlAlreadyOnError as e:
-            raise e
+            raise OperationAlreadyRunningError(
+                "Other climate controller operation is already running"
+            )
+        self.__check_compability()
+        self.__check_climate_state(operation)
 
         if operation == ControlOperation.START:
             self.__operation_led.turn_on()
         else:
             self.__operation_led.blink(frequency=2)
 
-        ids_before = self.__get_current_request_ids(update=True)
+        ids_before = self.__get_current_request_ids()
 
-        logging.info(f"Creating new request -> {operation}")
+        logger.debug(f"Creating new request for operation {operation}")
         self.__operation_running = True
         self.__climate_controls.value = operation
 
-        ids_after = self.__get_current_request_ids(update=True)
-
-        try:
-            self.__get_request_id(ids_before, ids_after)
-        except FailedToIdentifyRequestError as e:
-            raise e
+        ids_after = self.__get_current_request_ids()
+        self.__get_request_id(ids_before, ids_after)
 
         self.__updater.add_new_scheduler(
-            id="CLIMATE",
+            scheduler_id="CLIMATE",
             update_values=[Domain.CLIMATISATION],
             interval=15,
             callback_function=self.__update_request_state,
@@ -253,12 +241,18 @@ class ClimateController:
         )
 
     def __finish_operation(self, successfull: bool) -> None:
-        logging.info("Finishing climate controller operation")
-        self.__updater.remove_scheduler(id="CLIMATE", called_from=self)
+        logger.debug(
+            f"Finishing climate controller operation with ID {self.__request_id}"
+        )
+        if successfull:
+            self.__operation_led.turn_off()
+        else:
+            self.__operation_led.blink(frequency=10)
+            Timer(interval=3, function=self.__operation_led.turn_off).start()
+        self.__updater.remove_scheduler(scheduler_id="CLIMATE", called_from=self)
         self.__operation_running = False
         self.__request_status = None
         self.__request_id = None
-        self.__operation_led.turn_off()
 
     def __at_connection_failure(self) -> None:
         if self.__operation_running:
@@ -266,24 +260,31 @@ class ClimateController:
 
     def __update_request_state(self) -> None:
         if not self.__operation_running:
-            logging.error(
+            logger.error(
                 "There are no climate controller operations running, but update_request_state was still called"
             )
-            self.__updater.remove_scheduler(id="CLIMATE", called_from=self)
+            self.__updater.remove_scheduler(scheduler_id="CLIMATE", called_from=self)
             return
-        logging.info("Updating request status")
+        logger.debug("Updating request status")
         try:
             self.__request_status = self.__climate_requests[
                 self.__request_id
             ].status.value
-        except KeyError:
+        except KeyError as e:
+            logger.exception(e)
             self.__finish_operation(successfull=False)
-            raise NoMatchingIdError("There was no matching id found")
+            raise NoMatchingIdError(
+                f"Updating climate controller operation status with request ID {self.__request_id} failed because request with same ID wasn't found"
+            )
 
         if self.__request_status == self.SUCCESSFULL_REQUEST:
-            logging.info("Request progess -> Request is successfull")
+            logger.info(
+                f"Climate controller operation with request ID {self.__request_id} is successfull"
+            )
             self.__finish_operation(successfull=True)
 
         elif self.__request_status in self.FAILED_REQUESTS:
-            logging.error("Request progess -> Request has failed")
+            logger.error(
+                f"Climate controller operation with request ID {self.__request_id} has failed"
+            )
             self.__finish_operation(successfull=False)
