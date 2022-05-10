@@ -51,7 +51,7 @@ class VolkswagenIdVehicle:
 
     def __add_data_property_translations(self, config: dict) -> None:
         logger.debug("Adding translations for data properties")
-        for data_id, translations in config["translations"]:
+        for data_id, translations in config["translations"].items():
             self.get_data_property(data_id=data_id).add_translations(translations=translations)
 
     def __add_data_property_logger_paths(self, config: dict) -> None:
