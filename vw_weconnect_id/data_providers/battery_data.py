@@ -5,6 +5,7 @@ from weconnect.elements.charging_settings import ChargingSettings
 from weconnect.elements.plug_status import PlugStatus
 from vw_weconnect_id.data_providers.vehicle_data import WeconnectVehicleData
 from vw_weconnect_id.data_providers.vehicle_data_property import (
+    CalculatedWeConnectVehicleDataProperty,
     WeconnectVehicleDataProperty,
 )
 
@@ -36,8 +37,22 @@ class WeconnectBatteryData(WeconnectVehicleData):
     def __get_battery_status(self, battery_status: BatteryStatus) -> dict:
         battery_status_data = {}
         data = battery_status.currentSOC_pct
-        battery_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "soc_pct", data.value, "Battery", "battery", "%", log_data=True
+        battery_status_data[data.getGlobalAddress()] = []
+        battery_status_data[data.getGlobalAddress()].append(
+            WeconnectVehicleDataProperty(
+                "soc pct", data.value, "Battery", "battery", "%", log_data=True
+            )
+        )
+        battery_status_data[data.getGlobalAddress()].append(
+            CalculatedWeConnectVehicleDataProperty(
+                "battery charge",
+                data.value,
+                lambda x: x / 100 * 58,
+                "Battery charge",
+                "battery",
+                "kWh",
+                log_data=True,
+            )
         )
         data = battery_status.cruisingRangeElectric_km
         battery_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(

@@ -17,7 +17,11 @@ class WeconnectVehicleData:
         """
         data = {}
         for item in self._data.values():
-            data[item.data_id] = item
+            if isinstance(item, list):
+                for list_item in item:
+                    data[list_item.data_id] = list_item
+            else:
+                data[item.data_id] = item
         return data
 
     def __add_observer(self, add_observer_to: AddressableLeaf) -> None:
@@ -37,4 +41,8 @@ class WeconnectVehicleData:
             self.__update_value(element)
 
     def __update_value(self, element: AddressableAttribute) -> None:
-        self._data[element.getGlobalAddress()].update_value(element.value)
+        if isinstance(self._data[element.getGlobalAddress()], list):
+            for item in self._data[element.getGlobalAddress()]:
+                item.update_value(element.value)
+        else:
+            self._data[element.getGlobalAddress()].update_value(element.value)
