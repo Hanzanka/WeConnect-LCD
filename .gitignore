@@ -3,4 +3,4 @@ data/
 *__pycache__
 config.json
 main.py
-logs/
+application_logs/
