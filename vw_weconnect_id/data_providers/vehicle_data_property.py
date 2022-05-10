@@ -94,7 +94,7 @@ class WeconnectVehicleDataProperty:
             return
         try:
             logger.debug(f"Logging data from data property ID {self.__data_id}")
-            log_data(self, self.__logger_path)
+            log_data(self)
         except WeConnectLoggerError as e:
             logger.exception(e)
 
