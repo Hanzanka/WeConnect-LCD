@@ -30,7 +30,10 @@ def load_loggers(config: dict) -> None:
         "button",
         "datalogger",
         "data_properties",
-        "scene_controller"
+        "lcd_scene_controller",
+        "lcd_scenes",
+        "lcd_item",
+        "build_tools"
     ]
     for logger_name in logger_names:
         logger = logging.getLogger(logger_name)
