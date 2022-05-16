@@ -1,11 +1,16 @@
-from display.lcd_item import LCDItem
+import logging
 from display.weconnect_lcd_item import WeConnectLCDItem
 
 
+logger = logging.getLogger("lcd_scenes")
+
+
 class LCDScene:
-    def __init__(self, id, lcd_scene_controller, items=None, title=None) -> None:
-        self.__id = id
-        self.__lcd_scene_controller = lcd_scene_controller
+    
+    def __init__(self, scene_id, lcd_scene_controller, items=None, title=None) -> None:
+        logger.debug(f"Initializing LCDScene (ID: {scene_id})")
+        self._id = scene_id
+        self._lcd_scene_controller = lcd_scene_controller
 
         if title is not None:
             self.__title = title.center(20, "_")
@@ -17,22 +22,19 @@ class LCDScene:
         self.__endpoint = 4 if self.__title is None else 3
         self.__selected_index = 0
 
-        if len(self.__items) != 0:
-            for item in self.__items:
-                item.add_scene(self)
-
     @property
     def id(self):
-        return self.__id
+        return self._id
 
-    def add_item(self, item):
-        item.add_scene(self)
-        self.__items.append(item)
+    def add_item(self, lcd_item):
+        logger.debug(f"Adding item (ID: {lcd_item.id}) to LCDScene (ID: {self._id})")
+        self.__items.append(lcd_item)
 
-    def get_selected_item(self) -> LCDItem:
-        return self.__items[self.__selected_index]
+    def next(self):
+        return self.__items[self.__selected_index].target
 
     def load(self) -> None:
+        logger.debug(f"Loading LCDScene (ID: {self._id})")
         if self.__title is None:
             self.__select_item()
         else:
@@ -41,19 +43,20 @@ class LCDScene:
         self.refresh()
 
     def exit(self) -> None:
+        logger.debug(f"Exiting LCDScene (ID: {self._id})")
         if self.__title is None:
             self.__unselect_item()
         else:
             for item in self.__items:
                 item.set_mode(WeConnectLCDItem.WeConnetLCDItemMode.PRIMARY)
 
-    def refresh(self) -> list:
+    def refresh(self) -> None:
         content = [
             item.content for item in self.__items[self.__startpoint : self.__endpoint]
         ]
         if self.__title is not None:
             content = [self.__title] + content
-        self.__lcd_scene_controller.refresh(self.__id, content)
+        self._lcd_scene_controller.refresh(self._id, content)
 
     def __select_item(self) -> None:
         self.__items[self.__selected_index].select()
@@ -65,14 +68,14 @@ class LCDScene:
         if self.__title is None:
             self.__unselect_item()
         if way == "up":
-            self.__up()
+            self._up()
         elif way == "down":
-            self.__down()
+            self._down()
         if self.__title is None:
             self.__select_item()
         self.refresh()
 
-    def __up(self) -> None:
+    def _up(self) -> None:
         if self.__title is None:
             self.__selected_index -= 1
         else:
@@ -83,7 +86,7 @@ class LCDScene:
             self.__selected_index = len(self.__items) - 1
             self.__startpoint = (
                 self.__selected_index - list_lenght
-                if len(self.__items) >= list_lenght
+                if len(self.__items) >= list_lenght + 1
                 else 0
             )
             self.__endpoint = (
@@ -100,7 +103,7 @@ class LCDScene:
                 else list_lenght + 1
             )
 
-    def __down(self) -> None:
+    def _down(self) -> None:
         if self.__title is None:
             self.__selected_index += 1
         else:
