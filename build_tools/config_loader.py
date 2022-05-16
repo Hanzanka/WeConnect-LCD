@@ -10,7 +10,7 @@ def load_config() -> dict:
     Loads config from config.json-file
 
     Raises:
-        e: [Raised if reading config fails]
+        ConfigLoaderError: [Raised if reading config fails]
 
     Returns:
         dict: [Dict containing config]
