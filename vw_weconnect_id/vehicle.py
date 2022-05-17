@@ -16,7 +16,7 @@ class VolkswagenIdVehicle:
     CAR_BRANDS = {"WCAR": "Volkswagen"}
 
     def __init__(self, vehicle: Vehicle, updater: WeConnectUpdater, config: dict) -> None:
-        logger.debug("Initializing vehicle")
+        logger.debug(f"Initializing vehicle (VIN: {vehicle.vin})")
         self.__import_vehicle_properties(vehicle)
         self.__setup_vehicle()
 
@@ -40,7 +40,7 @@ class VolkswagenIdVehicle:
         self.__vin = vehicle.vin
 
     def __setup_vehicle(self) -> None:
-        logger.debug("Enabling request tracker for climatisation controller")
+        logger.debug("Enabling request tracker for climate controller")
         self.__weconnect_vehicle.enableTracker()
 
     def __import_vehicle_data(self) -> None:
@@ -50,12 +50,12 @@ class VolkswagenIdVehicle:
         self.__data.update(self.__readiness_data_provider.get_data())
 
     def __add_data_property_translations(self, config: dict) -> None:
-        logger.debug("Adding translations for data properties")
+        logger.debug("Adding translations for WeconnectVehicleDataProperties")
         for data_id, translations in config["translations"].items():
             self.get_data_property(data_id=data_id).add_translations(translations=translations)
 
     def __add_data_property_logger_paths(self, config: dict) -> None:
-        logger.debug("Setting logging path for data properties that log their data")
+        logger.debug("Setting logging path for WeconnectVehicleDataProperties that log their data")
         for data_property in self.__data.values():
             if data_property.logging_enabled:
                 data_property.set_logger_path(config["paths"]["data_logs"])
@@ -64,7 +64,7 @@ class VolkswagenIdVehicle:
         if self.__climate_controller is None:
             return
         try:
-            logger.info("Starting vehicle climate control")
+            logger.info(f"Starting vehicle (VIN: {self.__vin}) climate controller")
             self.__climate_controller.start()
         except Exception as e:
             logger.exception(e)
@@ -73,8 +73,17 @@ class VolkswagenIdVehicle:
         if self.__climate_controller is None:
             return
         try:
-            logger.info("Stopping vehicle climate control")
+            logger.info(f"Stopping vehicle (VIN: {self.__vin}) climate controller")
             self.__climate_controller.stop()
+        except Exception as e:
+            logger.exception(e)
+
+    def set_climate_controller_temperature(self, temperature: float) -> None:
+        if self.__climate_controller is None:
+            return
+        try:
+            logger.info(f"Updating vehicle (VIN: {self.__vin}) climate controller target temperature")
+            self.__climate_controller.set_temperature(temperature)
         except Exception as e:
             logger.exception(e)
 
@@ -82,7 +91,7 @@ class VolkswagenIdVehicle:
         return self.__data[data_id]
 
     def add_callback_function(self, data_id: str, function: callable) -> None:
-        logger.info(f"Adding callback function {function.__name__} to data property ID {data_id}")
+        logger.info(f"Adding callback function {function.__name__} to WeconnectVehicleDataProperty (ID: {data_id})")
         self.get_data_property(data_id).add_callback_function(function)
 
     def get_weconnect_vehicle(self) -> Vehicle:

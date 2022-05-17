@@ -8,7 +8,7 @@ class WeConnectLoggerError(Exception):
     pass
 
 
-logger = logging.getLogger("datalogger")
+logger = logging.getLogger("vehicle_data_logger")
 
 
 def log(data_property) -> None:
@@ -22,15 +22,14 @@ def log(data_property) -> None:
         WeConnectLoggerError: [Raised if creating dir to given path fails or if writing to file fails]
     """
     path = data_property.logger_path
-    logger.info(f"Logging data from property '{data_property.data_id}'")
+    logger.debug(f"Logging data from WeconnectVehicleDataProperty (ID: {data_property.data_id})")
     dir_path = Path(path + f"/{data_property.category}")
     if not dir_path.is_dir():
         try:
-            logger.info(f"Creating new folder to path {dir_path}")
+            logger.info(f"Creating new folder (PATH: {dir_path})")
             os.mkdir(dir_path)
         except OSError as e:
             logger.exception(e)
-            raise WeConnectLoggerError(f"Error occurred while trying to create directory in path {dir_path}")
 
     file_path = Path(str(dir_path) + f"/{data_property.data_id.replace(' ', '_')}.csv")
     exists = file_path.is_file()
@@ -44,4 +43,3 @@ def log(data_property) -> None:
             writer.writerow(data_property.get_logging_data())
     except Exception as e:
         logger.exception(e)
-        raise WeConnectLoggerError(f"Error occurred while trying to log data into file in path {file_path}")

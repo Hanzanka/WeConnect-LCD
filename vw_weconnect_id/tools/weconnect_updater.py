@@ -20,6 +20,7 @@ class WeConnectUpdater:
     def __init__(
         self, weconnect: WeConnect, lcd_controller: LCDController, start_on_init=True
     ) -> None:
+        logger.debug("Initializing WeConnectUpdater")
         self.__weconnect = weconnect
         self.__lcd_controller = lcd_controller
         self.__update_led = create_led_driver(
@@ -41,7 +42,7 @@ class WeConnectUpdater:
         called_from: object,
         at_lost_connection: callable,
     ) -> None:
-        logger.info(f"Adding new update scheduler with ID '{scheduler_id}'")
+        logger.info(f"Adding new update scheduler (ID: {scheduler_id})")
         if called_from not in self.__updater_related_objects:
             self.__updater_related_objects[called_from] = at_lost_connection
         try:
@@ -53,17 +54,17 @@ class WeConnectUpdater:
                 id=scheduler_id,
             )
         except ConflictingIdError as e:
-            logger.error(f"Scheduler with ID '{scheduler_id}' already exists")
+            logger.error(f"Update scheduler (ID: {scheduler_id}) already exists")
             raise e
 
     def remove_scheduler(self, scheduler_id: str, called_from) -> None:
-        logger.info(f"Removing update scheduler with ID '{scheduler_id}'")
+        logger.info(f"Removing update scheduler (ID: {scheduler_id})")
         try:
             self.__scheduler.remove_job(job_id=scheduler_id)
             if called_from in self.__updater_related_objects:
                 self.__updater_related_objects.pop(called_from)
         except KeyError as e:
-            logger.error(f"Couldn't find update scheduler with ID '{scheduler_id}'")
+            logger.error(f"Couldn't find update scheduler (ID: {scheduler_id})")
             raise e
 
     def update_weconnect(self, update_domains: list, callback_function=None) -> None:

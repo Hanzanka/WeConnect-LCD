@@ -7,14 +7,14 @@ from vw_weconnect_id.tools.weconnect_logger import (
 from enum import Enum
 
 
-logger = logging.getLogger("data properties")
+logger = logging.getLogger("data_properties")
 
 
 class WeconnectVehicleDataProperty:
     def __init__(
         self, data_id, value, desc, category, unit=None, log_data=False
     ) -> None:
-        logger.debug(f"Initializing data property ID {data_id}")
+        logger.debug(f"Initializing WeconnectVehicleDataProperty (ID: {data_id})")
         self.__data_id = data_id
         if issubclass(WeconnectVehicleDataProperty, self.__class__):
             self._string_value = str(value.value if isinstance(value, Enum) else value)
@@ -74,7 +74,7 @@ class WeconnectVehicleDataProperty:
         return self.__logger_path
 
     def update_value(self, value) -> None:
-        logger.debug(f"Updating value of data property ID {self.__data_id}")
+        logger.debug(f"Updating WeconnectVehicleDataProperty (ID: {self.__data_id}) value")
         self._string_value = str(value.value if isinstance(value, Enum) else value)
         self._absolute_value = value
         self._time_updated = datetime.now().time().strftime("%H.%M:%S")
@@ -85,7 +85,7 @@ class WeconnectVehicleDataProperty:
 
     def add_callback_function(self, function: callable) -> None:
         logger.debug(
-            f"Added callback function {function.__name__} to data property ID {self.__data_id}"
+            f"Added callback function {function.__name__} to WeconnectVehicleDataProperty (ID: {self.__data_id})"
         )
         self._call_on_update.append(function)
 
@@ -93,7 +93,7 @@ class WeconnectVehicleDataProperty:
         if not self.__log_data:
             return
         try:
-            logger.debug(f"Logging data from data property ID {self.__data_id}")
+            logger.debug(f"Logging data from WeconnectVehicleDataProperty (ID: {self.__data_id})")
             log_data(self)
         except WeConnectLoggerError as e:
             logger.exception(e)
@@ -120,7 +120,7 @@ class WeconnectVehicleDataProperty:
     def add_translations(self, translations: dict) -> None:
         if self.__translations is None:
             logger.debug(
-                f"Added translations {translations} to data property ID {self.__data_id}"
+                f"Added translations ({translations}) to WeconnectVehicleDataProperty (ID: {self.__data_id})"
             )
             self.__translations = translations
 
