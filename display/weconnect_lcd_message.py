@@ -10,21 +10,19 @@ def configure_auto_messages(
     config: dict, vehicle: VolkswagenIdVehicle, lcd_controller: LCDController
 ) -> None:
     logger.debug("Initializing WeConnectLCDMessages")
-    for message_id in config["automated messages"].keys():
-        WeConnectLCDMessage(config, message_id, vehicle, lcd_controller)
+    for message_config in config["automated messages"]:
+        WeConnectLCDMessage(message_config, vehicle, lcd_controller)
 
 
 class WeConnectLCDMessage:
     def __init__(
         self,
-        config: dict,
-        message_id,
+        message_config: dict,
         vehicle: VolkswagenIdVehicle,
         lcd_controller: LCDController,
     ) -> None:
-        logger.debug(f"Initializing WeConnectLCDMessage (ID: {message_id})")
-        message_config = config["automated messages"][message_id]
-        self.__id = message_id
+        self.__id = message_config["id"]
+        logger.debug(f"Initializing WeConnectLCDMessage (ID: {self.__id})")
         self.__lcd_controller = lcd_controller
         self.__selective_messages = "trigger" in message_config
         if self.__selective_messages:
