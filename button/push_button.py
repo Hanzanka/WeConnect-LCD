@@ -24,8 +24,8 @@ class PushButton:
         long_press_callback=None,
         long_press_time=None,
     ) -> None:
-        logger.debug(f"Initializing button with ID {button_id}")
-        self.__button_id = button_id
+        logger.debug(f"Initializing PushButton (ID: {button_id})")
+        self.__id = button_id
         self.__pin = pin
 
         self.__click_callback = click_callback
@@ -63,7 +63,6 @@ class PushButton:
             if self.__release_lock.locked():
                 self.__release_lock.release()
             return
-        logger.debug(f"Released press lock from button ID {self.__button_id}")
         self.__press_lock.release()
 
     def __wait_for_release(self) -> ButtonAction:
@@ -87,24 +86,24 @@ class PushButton:
         return PushButton.ButtonAction.CLICK
 
     def __released(self) -> None:
-        logger.debug(f"Button with ID {self.__button_id} was released")
+        logger.info(f"PushButton (ID: {self.__id}) was released")
         self.__button_event.set()
 
     def __pressed(self) -> None:
-        logger.debug(f"Button with ID {self.__button_id} was pressed")
+        logger.info(f"PushButton (ID: {self.__id}) was pressed")
         self.__button_event.clear()
 
         button_action = self.__wait_for_release()
 
         if button_action == PushButton.ButtonAction.INVALID:
-            logger.debug(f"Button ID {self.__button_id} got invalid action")
+            logger.info(f"PushButton (ID: {self.__id}) got invalid action")
             return
 
         if button_action == PushButton.ButtonAction.CLICK:
-            logger.debug(f"Button ID {self.__button_id} was pressed")
+            logger.info(f"PushButton (ID: {self.__id}) was clicked")
             self.__click_callback()
             return
 
         if button_action == PushButton.ButtonAction.HOLD:
-            logger.debug(f"Button ID {self.__button_id} was long pressed")
+            logger.info(f"PushButton (ID: {self.__id}) was long pressed")
             self.__long_press_callback()
