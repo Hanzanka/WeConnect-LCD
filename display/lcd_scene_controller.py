@@ -74,7 +74,7 @@ class LCDSceneController:
         if isinstance(target, tuple):
             function = target[0]
             args = target[1]
-            Thread(target=function, args=([] if args is None else [args])).start()
+            Thread(target=function, args=([] if args is None else args)).start()
             return
 
         if isinstance(target, LCDScene):
