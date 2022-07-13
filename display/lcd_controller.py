@@ -6,7 +6,7 @@ import textwrap
 from queue import Queue
 
 
-logger = logging.getLogger("lcd_controller")
+LOG = logging.getLogger("lcd_controller")
 
 
 class LCDController:
@@ -16,7 +16,7 @@ class LCDController:
     """
 
     def __init__(self, lcd_scene_controller) -> None:
-        logger.debug("Initializing LCDController")
+        LOG.debug("Initializing LCDController")
         self.__lcd = CharLCD(
             i2c_expander="PCF8574", address=0x27, port=1, charmap="A00", cols=20, rows=4
         )
@@ -54,10 +54,9 @@ class LCDController:
         return content_string
 
     def update_lcd(self, content: list) -> None:
-        
         if len(content) > 4:
             self.display_message("Content list is too long!")
-            logger.error(f"Given content list is too long (Content: {content})")
+            LOG.error(f"Given content list is too long (Content: {content})")
             return
 
         if not self.__message_on_screen:
@@ -66,7 +65,7 @@ class LCDController:
                 self.__lcd.cursor_pos = (0, 0)
                 self.__lcd.write_string(self.__content_into_string(content))
             except Exception as e:
-                logger.exception(e)
+                LOG.exception(e)
             self.__ready()
 
     def backlight_on(self) -> None:
@@ -77,7 +76,7 @@ class LCDController:
 
     def backlight_off(self) -> None:
         self.__lcd.backlight_enabled = False
-        
+
     def __start_darkmode_timer(self, time=None) -> None:
         if self.__darkmode_timer.is_alive():
             self.__darkmode_timer.cancel()
@@ -87,7 +86,7 @@ class LCDController:
         self.__darkmode_timer.start()
 
     def __load_custom_characters(self) -> None:
-        logger.debug("Creating custom lcd characters")
+        LOG.debug("Creating custom lcd characters")
         upper_left_corner = [0x00, 0x00, 0x00, 0x00, 0x0F, 0x08, 0x08, 0x08]
         bottom_left_corner = [0x08, 0x08, 0x08, 0x0F, 0x00, 0x00, 0x00, 0x00]
         upper_right_corner = [0x00, 0x00, 0x00, 0x00, 0x1E, 0x02, 0x02, 0x02]
@@ -130,15 +129,15 @@ class LCDController:
             self.display_message(queued_msg[0], queued_msg[1])
 
     def display_message(self, message, time_on_screen=None) -> None:
-        logger.debug(f"Queued new message (Content: {message})")
+        LOG.debug(f"Queued new message (Content: {message})")
         if not self.__message_on_screen:
-            
+
             self.backlight_on()
             self.__wait()
             if time_on_screen is not None:
                 self.__interactions_enabled = False
                 self.__message_on_screen = True
-            
+
             self.__print_message_square()
             splitted = textwrap.wrap(message, 16)
             if len(splitted) == 1:
@@ -150,20 +149,22 @@ class LCDController:
                 for i in range(0, 2):
                     self.__lcd.cursor_pos = (1 + i, 1)
                     self.__lcd.write_string(splitted[i])
-            except Exception:
-                logging.error(traceback.print_exc())
+            except Exception as e:
+                LOG.exception(e)
             self.__ready()
 
             if time_on_screen is not None:
-                self.__message_timer = Timer(time_on_screen, self.clear_message)
+                self.__message_timer = Timer(
+                    interval=time_on_screen, function=self.clear_message
+                )
                 self.__message_timer.start()
 
         else:
             if time_on_screen is not None:
                 self.__message_queue.put((message, time_on_screen))
-                logger.debug("Message added to message queue")
+                LOG.debug("Message added to message queue")
             else:
-                logger.debug("Cannot queue messages with no onscreen time")
+                LOG.debug("Cannot queue messages with no onscreen time")
 
     @property
     def can_interact(self) -> bool:
