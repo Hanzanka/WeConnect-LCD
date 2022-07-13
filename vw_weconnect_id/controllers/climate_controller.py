@@ -106,7 +106,7 @@ class ClimateController:
     def switch(self) -> None:
         LOG.info("Requested to switch climate controller state")
         self.__updater.update_weconnect(update_domains=[Domain.CLIMATISATION])
-        if self.__climate_state.absolute_value in self.CLIMATE_CONTROL_VALUES_OFF:
+        if self.__climate_state.value in self.CLIMATE_CONTROL_VALUES_OFF:
             self.start()
         else:
             self.stop()
@@ -232,7 +232,7 @@ class ClimateController:
     def __get_climate_control_state(self) -> ClimatizationStatus.ClimatizationState:
         LOG.debug("Checking current climate controller status")
         self.__updater.update_weconnect(update_domains=[Domain.CLIMATISATION])
-        return self.__climate_state.absolute_value
+        return self.__climate_state.value
 
     def __get_current_request_ids(self) -> list:
         LOG.debug("Receiving current climate operation request IDs")
@@ -332,7 +332,7 @@ class ClimateController:
         )
         if successfull:
             self.__lcd_controller.display_message(
-                message=f"Ilmastoinnin Tila: {self.__climate_state.translated_value}",
+                message=f"Ilmastoinnin Tila: {self.__climate_state.custom_value_format(translate=True, include_unit=False)}",
                 time_on_screen=5,
             )
             self.__operation_led.turn_off()
