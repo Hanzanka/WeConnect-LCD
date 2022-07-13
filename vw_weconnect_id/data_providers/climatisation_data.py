@@ -29,15 +29,15 @@ class WeconnectClimateData(WeconnectVehicleData):
         climate_status_data = {}
         data = climate_status.remainingClimatisationTime_min
         climate_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "remaining time",
+            "climate controller time remaining",
             data.value,
-            "Climate control time remaining",
+            "Remaining climate controller time",
             "climate",
             "min",
         )
         data = climate_status.climatisationState
         climate_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "climate state", data.value, "Climate control status", "climate"
+            "climate controller state", data.value, "Climate controller state", "climate"
         )
         return climate_status_data
 
@@ -45,22 +45,22 @@ class WeconnectClimateData(WeconnectVehicleData):
         climate_settings_data = {}
         data = climate_settings.targetTemperature_C
         climate_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "target temperature",
+            "climate controller target temperature",
             data.value,
-            "Climate control target temperature",
+            "Climate controller target temperature",
             "climate",
             "°C",
         )
         data = climate_settings.climatisationWithoutExternalPower
         climate_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "no external power climate control",
+            "climate controller without external power",
             data.value,
             "Climate control without external power",
             "climate",
         )
         data = climate_settings.climatizationAtUnlock
         climate_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "climate control at unlock",
+            "climate controller at unlock",
             data.value,
             "Start climate control when unlocked",
             "climate",

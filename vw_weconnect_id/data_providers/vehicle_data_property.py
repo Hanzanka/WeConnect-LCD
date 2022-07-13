@@ -7,27 +7,33 @@ from vw_weconnect_id.tools.weconnect_logger import (
 from enum import Enum
 
 
-logger = logging.getLogger("data_properties")
+LOG = logging.getLogger("data_properties")
 
 
 class WeconnectVehicleDataProperty:
-    def __init__(
-        self, data_id, value, desc, category, unit=None, log_data=False
-    ) -> None:
-        logger.debug(f"Initializing WeconnectVehicleDataProperty (ID: {data_id})")
-        self.__data_id = data_id
-        if issubclass(WeconnectVehicleDataProperty, self.__class__):
-            self._string_value = str(value.value if isinstance(value, Enum) else value)
-            self._absolute_value = value
-        self.__unit = unit
-        self.__desc = desc
+    def __init__(self, data_property_id, value, category, desc=None, unit=None) -> None:
+        LOG.debug(f"Initializing WeconnectVehicleDataProperty (ID: {data_property_id})")
+        self.__id = data_property_id
+        self._value = value
         self.__category = category
+        self.__desc = desc
+        self.__unit = unit
         self.__translations = None
-        self._call_on_update = []
-        self._time_updated = datetime.now().time().strftime("%H.%M:%S")
-        self._date_updated = datetime.now().date().strftime("%d.%m.%Y")
-        self.__log_data = log_data
+        if self._value is not None:
+            self._value_string = str(value.value if isinstance(value, Enum) else value)
+            self._time_updated = datetime.now().time().strftime("%H.%M:%S")
+            self._date_updated = datetime.now().date().strftime("%d.%m.%Y")
+        self._callback_functions = []
+        self.__logging_enabled = False
         self.__logger_path = None
+
+    @property
+    def id(self) -> str:
+        return self.__id
+
+    @property
+    def value(self):
+        return self._value
 
     @property
     def category(self) -> str:
@@ -38,28 +44,12 @@ class WeconnectVehicleDataProperty:
         return self.__desc
 
     @property
-    def data_id(self) -> str:
-        return self.__data_id
-
-    @property
     def string_value(self) -> str:
-        return self._string_value
-
-    @property
-    def absolute_value(self):
-        return self._absolute_value
-
-    @property
-    def translated_value(self) -> str:
-        return (
-            self.__translations[self._string_value]
-            if self._string_value in self.__translations
-            else None
-        )
+        return self._value_string
 
     @property
     def logging_enabled(self) -> bool:
-        return self.__log_data
+        return self.__logging_enabled
 
     @property
     def last_update_time(self) -> str:
@@ -73,89 +63,91 @@ class WeconnectVehicleDataProperty:
     def logger_path(self) -> str:
         return self.__logger_path
 
-    def update_value(self, value) -> None:
-        logger.debug(f"Updating WeconnectVehicleDataProperty (ID: {self.__data_id}) value")
-        self._string_value = str(value.value if isinstance(value, Enum) else value)
-        self._absolute_value = value
-        self._time_updated = datetime.now().time().strftime("%H.%M:%S")
-        self._date_updated = datetime.now().date().strftime("%d.%m.%Y")
-        for function in self._call_on_update:
-            function()
-        self.log()
-
-    def add_callback_function(self, function: callable) -> None:
-        logger.debug(
-            f"Added callback function {function.__name__} to WeconnectVehicleDataProperty (ID: {self.__data_id})"
-        )
-        self._call_on_update.append(function)
-
-    def log(self) -> None:
-        if not self.__log_data:
-            return
-        try:
-            logger.debug(f"Logging data from WeconnectVehicleDataProperty (ID: {self.__data_id})")
-            log_data(self)
-        except WeConnectLoggerError as e:
-            logger.exception(e)
-
-    def get_value_with_unit(self, translate=False) -> str:
-        if translate and self.__translations is not None:
-            return self.__translations[self._string_value]
-        return self._string_value + ("" if self.__unit is None else self.__unit)
-
-    def get_logging_data(self) -> tuple:
+    @property
+    def logger_value_format(self) -> tuple:
         return (
-            self.get_value_with_unit(),
+            self.custom_value_format(translate=False, include_unit=True),
             self._time_updated,
             self._date_updated,
         )
 
-    def __str__(self) -> str:
+    def custom_value_format(self, translate=False, include_unit=True) -> str:
         return (
-            f"{self.__desc:<50}{self._string_value}"
-            if self.__unit is None
-            else f"{self.__desc:<50}{self._string_value}{self.__unit}"
+            self.__translations[self._value_string]
+            if translate and self.__translations is not None
+            else self._value_string
+        ) + (self.__unit if include_unit and self.__unit is not None else "")
+
+    def update_value(self, value) -> None:
+        LOG.debug(f"Updating WeconnectVehicleDataProperty (ID: {self.__id}) value")
+        self._value = value
+        self._value_string = str(value.value if isinstance(value, Enum) else value)
+        self._time_updated = datetime.now().time().strftime("%H.%M:%S")
+        self._date_updated = datetime.now().date().strftime("%d.%m.%Y")
+        for function in self._callback_functions:
+            function()
+        self.log()
+
+    def add_callback_function(self, function: callable) -> None:
+        LOG.debug(
+            f"Added callback function {function.__name__} to WeconnectVehicleDataProperty (ID: {self.__id})"
         )
+        self._callback_functions.append(function)
+
+    def log(self) -> None:
+        if not self.__logging_enabled:
+            return
+        try:
+            LOG.debug(
+                f"Logging data from WeconnectVehicleDataProperty (ID: {self.__id})"
+            )
+            log_data(self)
+        except WeConnectLoggerError as e:
+            LOG.exception(e)
 
     def add_translations(self, translations: dict) -> None:
         if self.__translations is None:
-            logger.debug(
-                f"Added translations ({translations}) to WeconnectVehicleDataProperty (ID: {self.__data_id})"
+            LOG.debug(
+                f"Added translations ({translations}) to WeconnectVehicleDataProperty (ID: {self.__id})"
             )
             self.__translations = translations
 
-    def set_logger_path(self, path: str) -> None:
-        if self.__logger_path is None:
-            self.__logger_path = path
-            self.log()
+    def enable_logging(self, path: str) -> None:
+        LOG.debug(
+            f"Enabled logging on WeconnectVehicleDataProperty (ID: {self.__id}), logs will be saved to '{path}'"
+        )
+        self.__logging_enabled = True
+        self.__logger_path = path
+        self.log()
 
 
 class CalculatedWeConnectVehicleDataProperty(WeconnectVehicleDataProperty):
     def __init__(
-        self,
-        data_id,
-        value,
-        formula: callable,
-        desc,
-        category,
-        unit=None,
-        log_data=False,
+        self, data_property_id, value, category, formula: callable, desc=None, unit=None
     ) -> None:
+        LOG.debug(f"Initializing CalculatedWeConnectVehicleDataProperty (ID: {data_property_id})")
         if not isinstance(value, int) and not isinstance(value, float):
-            raise ValueError(
+            raise AttributeError(
                 "Value for CalculatedWeConnectVehicleDataProperty must be int or float"
             )
-        super().__init__(data_id, value, desc, category, unit, log_data)
+        super().__init__(
+            data_provider_id=data_property_id,
+            value=None,
+            desc=desc,
+            category=category,
+            unit=unit,
+        )
         self.__formula = formula
-        calculation = round(formula(value), 2)
-        self._absolute_value = calculation
-        self._string_value = str(calculation)
+        calculation = self.__formula(value)
+        self._value = calculation
+        self._value_string = str(calculation)
 
     def update_value(self, value) -> None:
-        calculation = round(self.__formula(value), 2)
-        self._string_value = str(calculation)
-        self._absolute_value = calculation
-        for function in self._call_on_update:
+        LOG.debug(f"Updating CalculatedWeConnectVehicleDataProperty (ID: {self.__id}) value")
+        calculation = self.__formula(value)
+        self._value = calculation
+        self._value_string = str(calculation)
+        for function in self._callback_functions:
             function()
         self._time_updated = datetime.now().time().strftime("%H.%M:%S")
         self._date_updated = datetime.now().date().strftime("%d.%m.%Y")

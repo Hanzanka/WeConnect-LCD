@@ -9,19 +9,13 @@ class WeconnectVehicleData:
         self.__add_observer(add_observer_to)
 
     def get_data(self) -> dict:
-        """
-        Get data from vehicle
-
-        Returns:
-            dict: ["Dict that contains weconnect_vehicle_data_property objects"]
-        """
         data = {}
         for item in self._data.values():
             if isinstance(item, list):
                 for list_item in item:
-                    data[list_item.data_id] = list_item
+                    data[list_item.id] = list_item
             else:
-                data[item.data_id] = item
+                data[item.id] = item
         return data
 
     def __add_observer(self, add_observer_to: AddressableLeaf) -> None:

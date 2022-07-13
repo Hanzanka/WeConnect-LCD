@@ -26,7 +26,7 @@ class WeconnectReadinessData(WeconnectVehicleData):
         )
         data = connection_status.isActive
         connection_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "car active", data.value, "Car is in use", "readiness", log_data=True
+            "car in use", data.value, "Car is in use", "readiness"
         )
         return connection_data
 
@@ -38,6 +38,5 @@ class WeconnectReadinessData(WeconnectVehicleData):
             data.value,
             "Car battery is critically low",
             "readiness",
-            log_data=True,
         )
         return warnings_data
