@@ -144,4 +144,11 @@ class WeconnectBatteryData(WeconnectVehicleData):
             desc="Color of the charging indicator LED",
             category="battery"
         )
+        data = plug_status.externalPower
+        plug_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
+            data_property_id="external power",
+            value=data.value,
+            desc="External power status",
+            category="battery"
+        )
         return plug_status_data
