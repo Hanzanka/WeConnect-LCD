@@ -8,7 +8,7 @@ class WeConnectLoggerError(Exception):
     pass
 
 
-logger = logging.getLogger("vehicle_data_logger")
+LOG = logging.getLogger("vehicle_data_logger")
 
 
 def log(data_property) -> None:
@@ -22,16 +22,18 @@ def log(data_property) -> None:
         WeConnectLoggerError: [Raised if creating dir to given path fails or if writing to file fails]
     """
     path = data_property.logger_path
-    logger.debug(f"Logging data from WeconnectVehicleDataProperty (ID: {data_property.data_id})")
+    LOG.debug(
+        f"Logging data from WeconnectVehicleDataProperty (ID: {data_property.id})"
+    )
     dir_path = Path(path + f"/{data_property.category}")
     if not dir_path.is_dir():
         try:
-            logger.info(f"Creating new folder (PATH: {dir_path})")
+            LOG.info(f"Creating new folder (PATH: {dir_path})")
             os.mkdir(dir_path)
         except OSError as e:
-            logger.exception(e)
+            LOG.exception(e)
 
-    file_path = Path(str(dir_path) + f"/{data_property.data_id.replace(' ', '_')}.csv")
+    file_path = Path(str(dir_path) + f"/{data_property.id.replace(' ', '_')}.csv")
     exists = file_path.is_file()
 
     try:
@@ -39,7 +41,9 @@ def log(data_property) -> None:
             writer = csv.writer(csv_file, delimiter=";")
             if not exists:
                 writer.writerow(("value", "time", "date"))
-            logger.info(f"Writing data to {file_path}")
-            writer.writerow(data_property.get_logging_data())
+            LOG.debug(
+                f"Writing data from WeconnectVehicleDataProperty (ID: {data_property.id}) to (PATH: {file_path})"
+            )
+            writer.writerow(data_property.logger_value_format)
     except Exception as e:
-        logger.exception(e)
+        LOG.exception(e)
