@@ -26,14 +26,15 @@ def load_loggers(config: dict) -> None:
         "climate",
         "led",
         "weconnect_updater",
-        "display",
+        "lcd_controller",
         "button",
-        "datalogger",
+        "vehicle_data_logger",
         "data_properties",
         "lcd_scene_controller",
-        "lcd_scenes",
+        "lcd_scene",
         "lcd_item",
-        "build_tools"
+        "build_tools",
+        "lcd_message",
     ]
     for logger_name in logger_names:
         logger = logging.getLogger(logger_name)
