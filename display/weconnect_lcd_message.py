@@ -3,13 +3,13 @@ from display.lcd_controller import LCDController
 import logging
 
 
-logger = logging.getLogger("lcd_message")
+LOG = logging.getLogger("lcd_message")
 
 
 def configure_auto_messages(
     config: dict, vehicle: VolkswagenIdVehicle, lcd_controller: LCDController
 ) -> None:
-    logger.debug("Initializing WeConnectLCDMessages")
+    LOG.debug("Initializing WeConnectLCDMessages")
     for message_config in config["automated messages"]:
         WeConnectLCDMessage(message_config, vehicle, lcd_controller)
 
@@ -22,7 +22,7 @@ class WeConnectLCDMessage:
         lcd_controller: LCDController,
     ) -> None:
         self.__id = message_config["id"]
-        logger.debug(f"Initializing WeConnectLCDMessage (ID: {self.__id})")
+        LOG.debug(f"Initializing WeConnectLCDMessage (ID: {self.__id})")
         self.__lcd_controller = lcd_controller
         self.__selective_messages = "trigger" in message_config
         if self.__selective_messages:
@@ -36,16 +36,16 @@ class WeConnectLCDMessage:
         self.__data_provider.add_callback_function(self.on_data_update)
 
     def on_data_update(self) -> None:
-        value = self.__data_provider.get_value_with_unit(translate=self.__translate)
+        value = self.__data_provider.custom_value_format(translate=self.__translate, include_unit=True)
         if self.__selective_messages:
-            if self.__data_provider.absolute_value == self.__trigger_value:
+            if self.__data_provider.value == self.__trigger_value:
                 self.__display_message(value)
             return
         self.__display_message(value)
 
     def __display_message(self, value) -> None:
         message_content = self.__message_base.replace("{value}", value)
-        logger.debug(
+        LOG.debug(
             f"Queueing WeConnectLCDMessage (ID: {self.__id}) with content ({message_content})"
         )
         self.__lcd_controller.display_message(
