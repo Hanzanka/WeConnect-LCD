@@ -131,7 +131,7 @@ class CalculatedWeConnectVehicleDataProperty(WeconnectVehicleDataProperty):
                 "Value for CalculatedWeConnectVehicleDataProperty must be int or float"
             )
         super().__init__(
-            data_provider_id=data_property_id,
+            data_property_id=data_property_id,
             value=None,
             desc=desc,
             category=category,

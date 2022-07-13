@@ -22,11 +22,11 @@ class WeconnectReadinessData(WeconnectVehicleData):
         connection_data = {}
         data = connection_status.isOnline
         connection_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "car online", data.value, "Car is connected to internet", "readiness"
+            data_property_id="car online", value=data.value, desc="Car is connected to internet", category="readiness"
         )
         data = connection_status.isActive
         connection_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "car in use", data.value, "Car is in use", "readiness"
+            data_property_id="car in use", value=data.value, desc="Car is in use", category="readiness"
         )
         return connection_data
 
@@ -34,9 +34,9 @@ class WeconnectReadinessData(WeconnectVehicleData):
         warnings_data = {}
         data = warnings.insufficientBatteryLevelWarning
         warnings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "critical battery level",
-            data.value,
-            "Car battery is critically low",
-            "readiness",
+            data_property_id="critical battery level",
+            value=data.value,
+            desc="Car battery is critically low",
+            category="readiness",
         )
         return warnings_data

@@ -40,22 +40,22 @@ class WeconnectBatteryData(WeconnectVehicleData):
         battery_status_data[data.getGlobalAddress()] = []
         battery_status_data[data.getGlobalAddress()].append(
             WeconnectVehicleDataProperty(
-                "soc pct", data.value, "Battery charge percentage", "battery", "%"
+                data_property_id="soc pct", value=data.value, category="battery", desc="Battery charge percentage", unit="%"
             )
         )
         battery_status_data[data.getGlobalAddress()].append(
             CalculatedWeConnectVehicleDataProperty(
-                "battery charge",
-                data.value,
-                lambda x: round(x / 100 * 58, 2),
-                "Battery charge in kWh",
-                "battery",
-                "kWh",
+                data_property_id="battery charge",
+                value=data.value,
+                formula=lambda x: round(x / 100 * 58, 2),
+                desc="Battery charge in kWh",
+                category="battery",
+                unit="kWh",
             )
         )
         data = battery_status.cruisingRangeElectric_km
         battery_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "range", data.value, "Range", "battery", "km"
+            data_property_id="range", value=data.value, desc="Range", category="battery", unit="km"
         )
         return battery_status_data
 
@@ -63,31 +63,31 @@ class WeconnectBatteryData(WeconnectVehicleData):
         charging_status_data = {}
         data = charging_status.remainingChargingTimeToComplete_min
         charging_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "charge time remaining",
-            data.value,
-            "Charge time remaining",
-            "battery",
-            "min",
+            data_property_id="charge time remaining",
+            value=data.value,
+            desc="Charge time remaining",
+            category="battery",
+            unit="min",
         )
         data = charging_status.chargingState
         charging_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "charge state", data.value, "Charge state", "battery"
+            data_property_id="charge state", value=data.value, desc="Charge state", category="battery"
         )
         data = charging_status.chargeMode
         charging_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "charge mode", data.value, "Charge mode", "battery"
+            data_property_id="charge mode", value=data.value, desc="Charge mode", category="battery"
         )
         data = charging_status.chargePower_kW
         charging_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "charge power", data.value, "Charge power in kW", "battery", "kW"
+            data_property_id="charge power", value=data.value, desc="Charge power in kW", category="battery", unit="kW"
         )
         data = charging_status.chargeRate_kmph
         charging_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "charge rate", data.value, "Charge rate in km/h", "battery", "km/h"
+            data_property_id="charge rate", value=data.value, desc="Charge rate in km/h", category="battery", unit="km/h"
         )
         data = charging_status.chargeType
         charging_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "charge type", data.value, "Charge type", "battery"
+            data_property_id="charge type", value=data.value, desc="Charge type", category="battery"
         )
         return charging_status_data
 
@@ -95,29 +95,29 @@ class WeconnectBatteryData(WeconnectVehicleData):
         charging_settings_data = {}
         data = charging_settings.maxChargeCurrentAC
         charging_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "max ac charge current", data.value, "Max AC charge current", "battery"
+            data_property_id="max ac charge current", value=data.value, desc="Max AC charge current", category="battery"
         )
         data = charging_settings.autoUnlockPlugWhenCharged
         charging_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "auto unlock charging plug",
-            data.value,
-            "Auto unlock charging plug when charging is completed",
-            "battery",
+            data_property_id="auto unlock charging plug",
+            value=data.value,
+            desc="Auto unlock charging plug when charging is completed",
+            category="battery",
         )
         data = charging_settings.targetSOC_pct
         charging_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "target soc pct",
-            data.value,
-            "Target battery charge percentage",
-            "battery",
-            "%",
+            data_property_id="target soc pct",
+            value=data.value,
+            desc="Target battery charge percentage",
+            category="battery",
+            unit="%",
         )
         data = charging_settings.autoUnlockPlugWhenChargedAC
         charging_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "auto unlock charging plug ac",
-            data.value,
-            "Auto unlock charging plug when charging with AC is completed",
-            "battery",
+            data_property_id="auto unlock charging plug ac",
+            value=data.value,
+            desc="Auto unlock charging plug when charging with AC is completed",
+            category="battery",
         )
         return charging_settings_data
 
@@ -125,22 +125,23 @@ class WeconnectBatteryData(WeconnectVehicleData):
         plug_status_data = {}
         data = plug_status.plugConnectionState
         plug_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "charging plug connection status",
-            data.value,
-            "Charging plug connection status",
-            "battery",
+            data_property_id="charging plug connection status",
+            value=data.value,
+            desc="Charging plug connection status",
+            category="battery",
         )
         data = plug_status.plugLockState
         plug_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "charging plug lock status",
-            data.value,
-            "Charging plug locked / unlocked",
-            "battery",
+            data_property_id="charging plug lock status",
+            value=data.value,
+            desc="Charging plug locked / unlocked",
+            category="battery",
         )
         data = plug_status.ledColor
         plug_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "charging led color",
-            data.value,
-            "Color of the charging indicator LED"
+            data_property_id="charging led color",
+            value=data.value,
+            desc="Color of the charging indicator LED",
+            category="battery"
         )
         return plug_status_data

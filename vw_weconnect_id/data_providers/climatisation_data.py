@@ -29,15 +29,15 @@ class WeconnectClimateData(WeconnectVehicleData):
         climate_status_data = {}
         data = climate_status.remainingClimatisationTime_min
         climate_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "climate controller time remaining",
-            data.value,
-            "Remaining climate controller time",
-            "climate",
-            "min",
+            data_property_id="climate controller time remaining",
+            value=data.value,
+            desc="Remaining climate controller time",
+            category="climate",
+            unit="min",
         )
         data = climate_status.climatisationState
         climate_status_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "climate controller state", data.value, "Climate controller state", "climate"
+            data_property_id="climate controller state", value=data.value, desc="Climate controller state", category="climate"
         )
         return climate_status_data
 
@@ -45,37 +45,37 @@ class WeconnectClimateData(WeconnectVehicleData):
         climate_settings_data = {}
         data = climate_settings.targetTemperature_C
         climate_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "climate controller target temperature",
-            data.value,
-            "Climate controller target temperature",
-            "climate",
-            "°C",
+            data_property_id="climate controller target temperature",
+            value=data.value,
+            desc="Climate controller target temperature",
+            category="climate",
+            unit="°C",
         )
         data = climate_settings.climatisationWithoutExternalPower
         climate_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "climate controller without external power",
-            data.value,
-            "Climate control without external power",
-            "climate",
+            data_property_id="climate controller without external power",
+            value=data.value,
+            desc="Climate control without external power",
+            category="climate",
         )
         data = climate_settings.climatizationAtUnlock
         climate_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "climate controller at unlock",
-            data.value,
-            "Start climate control when unlocked",
-            "climate",
+            data_property_id="climate controller at unlock",
+            value=data.value,
+            desc="Start climate control when unlocked",
+            category="climate",
         )
         data = climate_settings.windowHeatingEnabled
         climate_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "windows heating", data.value, "Window heating enabled", "climate"
+            data_property_id="windows heating", value=data.value, desc="Window heating enabled", category="climate"
         )
         data = climate_settings.zoneFrontLeftEnabled
         climate_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "heat left seat", data.value, "Heat left front seat", "climate"
+            data_property_id="heat left seat", value=data.value, desc="Heat left front seat", category="climate"
         )
         data = climate_settings.zoneFrontRightEnabled
         climate_settings_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "heat right seat", data.value, "Heat right front seat", "climate"
+            data_property_id="heat right seat", value=data.value, desc="Heat right front seat", category="climate"
         )
         return climate_settings_data
 
@@ -85,16 +85,16 @@ class WeconnectClimateData(WeconnectVehicleData):
         window_heating_data = {}
         data = window_heating_status.windows["rear"]
         window_heating_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "rear window heating",
-            data.windowHeatingState.value.value,
-            "Rear window heating",
-            "climate",
+            data_property_id="rear window heating",
+            value=data.windowHeatingState.value,
+            desc="Rear window heating",
+            category="climate",
         )
         data = window_heating_status.windows["front"]
         window_heating_data[data.getGlobalAddress()] = WeconnectVehicleDataProperty(
-            "front window heating",
-            data.windowHeatingState.value.value,
-            "Front window heating",
-            "climate",
+            data_property_id="front window heating",
+            value=data.windowHeatingState.value,
+            desc="Front window heating",
+            category="climate",
         )
         return window_heating_data
