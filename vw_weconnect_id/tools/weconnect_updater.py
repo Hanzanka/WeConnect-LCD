@@ -2,7 +2,6 @@ from threading import Timer
 from weconnect.weconnect import WeConnect
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.base import ConflictingIdError
-from build_tools.config_loader import load_config
 import logging
 from weconnect.domain import Domain
 from datetime import datetime, time
@@ -22,7 +21,7 @@ class WeConnectUpdater:
     UPDATE_VALUES = [Domain.CHARGING, Domain.CLIMATISATION, Domain.READINESS]
 
     def __init__(
-        self, weconnect: WeConnect, lcd_controller: LCDController, start_on_init=True
+        self, weconnect: WeConnect, config: dict, lcd_controller: LCDController, start_on_init=True
     ) -> None:
         LOG.debug("Initializing WeConnectUpdater")
         self.__weconnect = weconnect
@@ -30,9 +29,11 @@ class WeConnectUpdater:
         self.__update_led = create_led_driver(
             led_pin=5, led_id="WECONNECT UPDATE", default_frequency=10
         )
+        
         self.__scheduler = BackgroundScheduler(timezone="Europe/Helsinki")
         self.__scheduler.start()
-        self.__config = load_config()["update rate"]
+        
+        self.__config = config["update rate"]
         self.__can_update = True
         if start_on_init:
             self.start()
@@ -57,23 +58,13 @@ class WeConnectUpdater:
             LOG.error(f"Update scheduler (ID: {scheduler_id}) already exists")
             raise e
 
-    def remove_scheduler(self, scheduler_id: str, called_from) -> None:
+    def remove_scheduler(self, scheduler_id: str) -> None:
         LOG.info(f"Removing update scheduler (ID: {scheduler_id})")
         try:
             self.__scheduler.remove_job(job_id=scheduler_id)
         except KeyError as e:
             LOG.error(f"Couldn't find update scheduler (ID: {scheduler_id})")
             raise e
-
-    def __update(self, update_domains: list) -> None:
-        try:
-            self.__weconnect.update(
-                updatePictures=False,
-                updateCapabilities=(True if Domain.ALL in update_domains else False),
-                selective=update_domains,
-            )
-        except Exception as e:
-            LOG.exception(e)
 
     def update_weconnect(self, update_domains: list, callback_function=None) -> None:
         LOG.debug("Updating WeConnect data from server")
@@ -95,7 +86,9 @@ class WeConnectUpdater:
                 updateCapabilities=(True if Domain.ALL in update_domains else False),
                 selective=update_domains,
             )
-        except Exception:
+            
+        except Exception as e:
+            print(e)
             self.__can_update = False
             self.__scheduler.remove_all_jobs()
 
