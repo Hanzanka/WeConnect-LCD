@@ -17,14 +17,14 @@ class PushButton:
     def __init__(
         self,
         pin: int,
-        button_id,
+        id,
         double_click_prevention_time: float,
         click_callback: callable,
         long_press_callback=None,
-        long_press_time=None
+        long_press_time=None,
     ) -> None:
-        LOG.debug(f"Initializing PushButton (ID: {button_id})")
-        self.__id = button_id
+        LOG.debug(f"Initializing PushButton (ID: {id})")
+        self.__id = id
         self.__pin = pin
 
         self.__click_callback = click_callback
@@ -76,17 +76,17 @@ class PushButton:
         )
 
         if not self.__button_event.is_set():
-            
+
             if self.__long_press_callback is None:
-                
+
                 if GPIO.input(self.__pin) != 1:
                     return PushButton.ButtonAction.CLICK
-                
+
                 if GPIO.input(self.__pin) == 1:
                     return PushButton.ButtonAction.INVALID
-                
+
             return PushButton.ButtonAction.HOLD
-        
+
         return PushButton.ButtonAction.CLICK
 
     def __released(self) -> None:

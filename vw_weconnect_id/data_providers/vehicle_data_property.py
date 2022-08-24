@@ -10,10 +10,10 @@ from enum import Enum
 LOG = logging.getLogger("data_properties")
 
 
-class WeconnectVehicleDataProperty:
-    def __init__(self, data_property_id, value, category, desc=None, unit=None) -> None:
-        LOG.debug(f"Initializing WeconnectVehicleDataProperty (ID: {data_property_id})")
-        self.__id = data_property_id
+class WeConnectVehicleDataProperty:
+    def __init__(self, id, value, category, desc=None, unit=None) -> None:
+        LOG.debug(f"Initializing WeconnectVehicleDataProperty (ID: {id})")
+        self._id = id
         self._value = value
         self.__category = category
         self.__desc = desc
@@ -29,7 +29,7 @@ class WeconnectVehicleDataProperty:
 
     @property
     def id(self) -> str:
-        return self.__id
+        return self._id
 
     @property
     def value(self):
@@ -79,7 +79,7 @@ class WeconnectVehicleDataProperty:
         ) + (self.__unit if include_unit and self.__unit is not None else "")
 
     def update_value(self, value) -> None:
-        LOG.debug(f"Updating WeconnectVehicleDataProperty (ID: {self.__id}) value")
+        LOG.debug(f"Updating WeconnectVehicleDataProperty (ID: {self._id}) value")
         self._value = value
         self._value_string = str(value.value if isinstance(value, Enum) else value)
         self._time_updated = datetime.now().time().strftime("%H.%M:%S")
@@ -90,7 +90,7 @@ class WeconnectVehicleDataProperty:
 
     def add_callback_function(self, function: callable) -> None:
         LOG.debug(
-            f"Added callback function {function.__name__} to WeconnectVehicleDataProperty (ID: {self.__id})"
+            f"Added callback function {function.__name__} to WeconnectVehicleDataProperty (ID: {self._id})"
         )
         self._callback_functions.append(function)
 
@@ -99,7 +99,7 @@ class WeconnectVehicleDataProperty:
             return
         try:
             LOG.debug(
-                f"Logging data from WeconnectVehicleDataProperty (ID: {self.__id})"
+                f"Logging data from WeconnectVehicleDataProperty (ID: {self._id})"
             )
             log_data(self)
         except WeConnectLoggerError as e:
@@ -108,30 +108,30 @@ class WeconnectVehicleDataProperty:
     def add_translations(self, translations: dict) -> None:
         if self.__translations is None:
             LOG.debug(
-                f"Added translations ({translations}) to WeconnectVehicleDataProperty (ID: {self.__id})"
+                f"Added translations ({translations}) to WeconnectVehicleDataProperty (ID: {self._id})"
             )
             self.__translations = translations
 
     def enable_logging(self, path: str) -> None:
         LOG.debug(
-            f"Enabled logging on WeconnectVehicleDataProperty (ID: {self.__id}), logs will be saved to '{path}'"
+            f"Enabled logging on WeconnectVehicleDataProperty (ID: {self._id}), logs will be saved to '{path}'"
         )
         self.__logging_enabled = True
         self.__logger_path = path
         self.log()
 
 
-class CalculatedWeConnectVehicleDataProperty(WeconnectVehicleDataProperty):
+class CalculatedWeConnectVehicleDataProperty(WeConnectVehicleDataProperty):
     def __init__(
-        self, data_property_id, value, category, formula: callable, desc=None, unit=None
+        self, id, value, category, formula: callable, desc=None, unit=None
     ) -> None:
-        LOG.debug(f"Initializing CalculatedWeConnectVehicleDataProperty (ID: {data_property_id})")
+        LOG.debug(f"Initializing CalculatedWeConnectVehicleDataProperty (ID: {id})")
         if not isinstance(value, int) and not isinstance(value, float):
             raise AttributeError(
                 "Value for CalculatedWeConnectVehicleDataProperty must be int or float"
             )
         super().__init__(
-            data_property_id=data_property_id,
+            id=id,
             value=None,
             desc=desc,
             category=category,
@@ -141,9 +141,13 @@ class CalculatedWeConnectVehicleDataProperty(WeconnectVehicleDataProperty):
         calculation = self.__formula(value)
         self._value = calculation
         self._value_string = str(calculation)
+        self._time_updated = datetime.now().time().strftime("%H.%M:%S")
+        self._date_updated = datetime.now().date().strftime("%d.%m.%Y")
 
     def update_value(self, value) -> None:
-        LOG.debug(f"Updating CalculatedWeConnectVehicleDataProperty (ID: {self.__id}) value")
+        LOG.debug(
+            f"Updating CalculatedWeConnectVehicleDataProperty (ID: {self._id}) value"
+        )
         calculation = self.__formula(value)
         self._value = calculation
         self._value_string = str(calculation)

@@ -13,10 +13,10 @@ class WeConnectLCDItem(LCDItem):
         self,
         data_provider: WeconnectVehicleDataProperty,
         title,
-        item_id,
+        id,
         translate=None,
     ) -> None:
-        super().__init__(title=None, item_id=item_id)
+        super().__init__(title=None, id=id)
         self._title = title
         self.__translate = translate
         self.__data_provider = data_provider

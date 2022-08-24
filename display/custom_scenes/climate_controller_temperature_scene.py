@@ -11,11 +11,9 @@ class ClimateControllerTemperatureScene(LCDScene):
 
     TEMPERATURES = list(numpy.arange(15.5, 30.5, 0.5))
 
-    def __init__(
-        self, scene_id, lcd_scene_controller, vehicle: VolkswagenIdVehicle
-    ) -> None:
-        super().__init__(scene_id, lcd_scene_controller)
-        LOG.debug(f"Initializing ClimateControllerTemperatureScene (ID: {scene_id})")
+    def __init__(self, id, lcd_scene_controller, vehicle: VolkswagenIdVehicle) -> None:
+        super().__init__(id=id, lcd_scene_controller=lcd_scene_controller)
+        LOG.debug(f"Initializing ClimateControllerTemperatureScene (ID: {id})")
         self.__vehicle = vehicle
         self.__current_temperature = self.__vehicle.get_data_property(
             "climate controller target temperature"

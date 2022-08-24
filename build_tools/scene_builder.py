@@ -7,15 +7,20 @@ from vw_weconnect_id.vehicle import VolkswagenIdVehicle
 from display.custom_scenes.climate_controller_temperature_scene import (
     ClimateControllerTemperatureScene,
 )
+from vw_weconnect_id.tools.weconnect_updater import WeConnectUpdater
+from weconnect.domain import Domain
 
 
-logger = logging.getLogger("build_tools")
+LOG = logging.getLogger("build_tools")
 
 
 def load_scenes(
-    config: dict, vehicle: VolkswagenIdVehicle, lcd_scene_controller: LCDSceneController
+    config: dict,
+    vehicle: VolkswagenIdVehicle,
+    lcd_scene_controller: LCDSceneController,
+    updater: WeConnectUpdater,
 ) -> dict:
-    logger.debug("Loading LCDScenes from config-file")
+    LOG.debug("Loading LCDScenes from config-file")
     scene_config = config["lcd scenes"]
     item_config = config["lcd items"]
 
@@ -26,6 +31,25 @@ def load_scenes(
             vehicle=vehicle,
         )
     }
+    custom_items = {
+        "climate controller starter": LCDItem(
+            title="Ilmastointi start",
+            item_id="item_climate_start",
+            target=vehicle.start_climate_control,
+        ),
+        "climate controller stopper": LCDItem(
+            title="Ilmastointi stop",
+            item_id="item_climate_stop",
+            target=vehicle.stop_climate_control,
+        ),
+        "update weconnect": LCDItem(
+            title="Päivitä nyt",
+            item_id="item_weconnect_update_now",
+            target=updater.update_weconnect,
+            target_args=[[Domain.CHARGING, Domain.CLIMATISATION, Domain.READINESS]],
+        ),
+    }
+
     scenes = {}
     items = {}
 
@@ -37,8 +61,7 @@ def load_scenes(
                 lcd_scene_controller=lcd_scene_controller,
                 title=(scene["title"] if "title" in scene else None),
             )
-            continue
-        if scene_type == "custom":
+        elif scene_type == "custom":
             scenes[scene["id"]] = custom_scenes[scene["custom scene id"]]
 
     for item in item_config:
@@ -48,15 +71,15 @@ def load_scenes(
                 item_id=item["id"],
                 target=(scenes[item["target"]] if "target" in item else None),
             )
-            continue
-
-        items[item["id"]] = WeConnectLCDItem(
-            data_provider=vehicle.get_data_property(item["data provider id"]),
-            title=(item["title"]),
-            item_id=item["id"],
-            second_title=(item["2nd title"] if "2nd title" in item else None),
-            translate=item["translate"],
-        )
+        elif item["type"] == "WeConnectLCDItem":
+            items[item["id"]] = WeConnectLCDItem(
+                data_provider=vehicle.get_data_property(item["data provider id"]),
+                title=(item["title"]),
+                item_id=item["id"],
+                translate=item["translate"],
+            )
+        elif item["type"] == "custom":
+            items[item["id"]] = custom_items[item["custom item id"]]
 
     for scene in scene_config:
         for item_id in scene["items"]:

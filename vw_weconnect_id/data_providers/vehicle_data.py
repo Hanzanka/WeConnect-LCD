@@ -14,16 +14,16 @@ class WeconnectVehicleData:
             if isinstance(item, list):
                 for list_item in item:
                     data[list_item.id] = list_item
-            else:
-                data[item.id] = item
+                continue
+            data[item.id] = item
         return data
 
     def __add_observer(self, add_observer_to: AddressableLeaf) -> None:
         add_observer_to.addObserver(
-            self.__on_weconnect_event,
-            AddressableLeaf.ObserverEvent.ENABLED
+            observer=self.__on_weconnect_event,
+            flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED
             | AddressableLeaf.ObserverEvent.DISABLED
-            | AddressableLeaf.ObserverEvent.VALUE_CHANGED,
+            | AddressableLeaf.ObserverEvent.ENABLED,
         )
 
     def __on_weconnect_event(self, element, flags) -> None:

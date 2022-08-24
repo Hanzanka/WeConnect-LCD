@@ -5,9 +5,9 @@ LOG = logging.getLogger("lcd_scene")
 
 
 class LCDScene:
-    def __init__(self, scene_id, lcd_scene_controller, items=None, title=None) -> None:
-        LOG.debug(f"Initializing LCDScene (ID: {scene_id})")
-        self._id = scene_id
+    def __init__(self, id, lcd_scene_controller, items=None, title=None) -> None:
+        LOG.debug(f"Initializing LCDScene (ID: {id})")
+        self._id = id
         self._lcd_scene_controller = lcd_scene_controller
 
         if title is not None:

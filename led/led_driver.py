@@ -13,8 +13,8 @@ def load_automated_leds(config: dict, vehicle) -> None:
     led_configs = config["automated leds"]
     for led_config in led_configs:
         LEDDriver(
-            gpio_pin=led_config["pin"],
-            led_id=led_config["id"],
+            pin=led_config["pin"],
+            id=led_config["id"],
             default_blinker_frequency=led_config["default frequency"],
             trigger=led_config["trigger"],
             vehicle=vehicle,
@@ -82,13 +82,13 @@ class LEDDriver:
         BLINKING = "blinking"
 
     def __init__(
-        self, gpio_pin, led_id, default_blinker_frequency, trigger=None, vehicle=None
+        self, pin, id, default_blinker_frequency, trigger=None, vehicle=None
     ) -> None:
-        LOG.debug(f"Creating new LEDDriver (ID: {led_id}) (PIN: {gpio_pin})")
+        LOG.debug(f"Creating new LEDDriver (ID: {id}) (PIN: {pin})")
 
-        self.__id = led_id
+        self.__id = id
 
-        self.__pin = gpio_pin
+        self.__pin = pin
         GPIO.setup(self.__pin, GPIO.OUT)
         GPIO.output(self.__pin, GPIO.LOW)
         self.__state = LEDDriver.LEDState.OFF
@@ -223,5 +223,5 @@ class LEDDriver:
 def create_led_driver(led_pin: int, led_id, default_frequency) -> LEDDriver:
     LOG.info(f"Creating new LEDDriver (ID: {led_id})")
     return LEDDriver(
-        gpio_pin=led_pin, led_id=led_id, default_blinker_frequency=default_frequency
+        pin=led_pin, id=led_id, default_blinker_frequency=default_frequency
     )

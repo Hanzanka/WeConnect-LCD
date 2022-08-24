@@ -6,16 +6,16 @@ LOG = logging.getLogger("lcd_item")
 
 class LCDItem:
     def __init__(
-        self, title, item_id, target=None, target_args=None, center=True
+        self, title, id, target=None, target_args=None, content_centering=True
     ) -> None:
-        LOG.debug(f"Initializing LCDItem (ID: {item_id})")
+        LOG.debug(f"Initializing LCDItem (ID: {id})")
         self._scenes = []
         self._content = ""
-        self._id = item_id
+        self._id = id
         self._title = title
         self.__target = target
         self.__target_args = target_args
-        self.__center = center
+        self.__content_centering = content_centering
         self._selected = False
         if self._title is not None:
             self._update_content()
@@ -23,10 +23,14 @@ class LCDItem:
     def _update_content(self) -> None:
         if self._selected:
             self._content = (
-                f">{self._title}".center(20) if self.__center else f">{self._title}"
+                f">{self._title}".center(20)
+                if self.__content_centering
+                else f">{self._title}"
             )
             return
-        self._content = self._title.center(20) if self.__center else self._title
+        self._content = (
+            self._title.center(20) if self.__content_centering else self._title
+        )
 
     def select(self) -> None:
         LOG.debug(f"Selected LCDItem (ID: {self._id})")
@@ -59,3 +63,11 @@ class LCDItem:
     @property
     def id(self):
         return self._id
+
+    @property
+    def content_centering(self) -> bool:
+        return self.__content_centering
+
+    @content_centering.setter
+    def content_centering(self, content_centering: bool) -> None:
+        self.__content_centering = content_centering

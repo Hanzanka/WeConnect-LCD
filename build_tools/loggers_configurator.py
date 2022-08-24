@@ -4,21 +4,21 @@ import logging
 def load_loggers(config: dict) -> None:
     logs_path = config["paths"]["application_logs"]
 
-    formatter = logging.Formatter(
+    base_formatter = logging.Formatter(
         fmt="%(levelname)s | %(asctime)s.%(msecs)03d | %(message)s",
         datefmt="%d.%m.%Y | %H:%M:%S",
     )
-    formatter_all = logging.Formatter(
+    all_logs_formatter = logging.Formatter(
         fmt="%(levelname)s | %(asctime)s.%(msecs)03d | %(name)s | %(message)s",
         datefmt="%d.%m.%Y | %H:%M:%S",
     )
 
-    file_handler_all = logging.FileHandler(logs_path + "all.log")
-    file_handler_all.setFormatter(formatter_all)
+    all_logs_file_handler = logging.FileHandler(logs_path + "all.log")
+    all_logs_file_handler.setFormatter(all_logs_formatter)
 
-    file_handler_exceptions = logging.FileHandler(logs_path + "exceptions.log")
-    file_handler_exceptions.setLevel(logging.ERROR)
-    file_handler_exceptions.setFormatter(formatter_all)
+    exceptions_file_handler = logging.FileHandler(logs_path + "exceptions.log")
+    exceptions_file_handler.setLevel(logging.ERROR)
+    exceptions_file_handler.setFormatter(all_logs_formatter)
 
     logger_names = [
         "main",
@@ -36,11 +36,12 @@ def load_loggers(config: dict) -> None:
         "build_tools",
         "lcd_message",
     ]
+    
     for logger_name in logger_names:
         logger = logging.getLogger(logger_name)
         logger.setLevel(logging.DEBUG)
         file_handler = logging.FileHandler(logs_path + logger_name + ".log")
-        file_handler.setFormatter(formatter)
+        file_handler.setFormatter(base_formatter)
         logger.addHandler(file_handler)
-        logger.addHandler(file_handler_all)
-        logger.addHandler(file_handler_exceptions)
+        logger.addHandler(all_logs_file_handler)
+        logger.addHandler(exceptions_file_handler)
