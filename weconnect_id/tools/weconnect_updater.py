@@ -21,32 +21,32 @@ class WeConnectUpdater:
     UPDATE_VALUES = [Domain.CHARGING, Domain.CLIMATISATION, Domain.READINESS]
 
     def __init__(
-        self, weconnect: WeConnect, config: dict, lcd_controller: LCDController, start_on_init=True
+        self,
+        weconnect: WeConnect,
+        config: dict,
+        lcd_controller: LCDController,
+        start_on_init=True,
     ) -> None:
         LOG.debug("Initializing WeConnectUpdater")
         self.__weconnect = weconnect
         self.__lcd_controller = lcd_controller
         self.__update_led = create_led_driver(
-            led_pin=5, led_id="WECONNECT UPDATE", default_frequency=10
+            pin=5, id="WECONNECT UPDATE", default_frequency=10
         )
-        
+
         self.__scheduler = BackgroundScheduler(timezone="Europe/Helsinki")
         self.__scheduler.start()
-        
+
         self.__config = config["update rate"]
         self.__can_update = True
-        
+
         self.update_weconnect(update_domains=[Domain.ALL])
-        
+
         if start_on_init:
             self.start()
 
     def add_new_scheduler(
-        self,
-        id: str,
-        update_values: list,
-        interval: int,
-        callback_function: callable
+        self, id: str, update_values: list, interval: int, callback_function: callable
     ) -> None:
         LOG.info(f"Adding new update scheduler (ID: {id})")
         try:
@@ -89,7 +89,7 @@ class WeConnectUpdater:
                 updateCapabilities=(True if Domain.ALL in update_domains else False),
                 selective=update_domains,
             )
-            
+
         except Exception:
             self.__can_update = False
             self.__scheduler.remove_all_jobs()
