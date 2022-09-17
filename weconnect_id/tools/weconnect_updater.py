@@ -35,35 +35,38 @@ class WeConnectUpdater:
         
         self.__config = config["update rate"]
         self.__can_update = True
+        
+        self.update_weconnect(update_domains=[Domain.ALL])
+        
         if start_on_init:
             self.start()
 
     def add_new_scheduler(
         self,
-        scheduler_id: str,
+        id: str,
         update_values: list,
         interval: int,
         callback_function: callable
     ) -> None:
-        LOG.info(f"Adding new update scheduler (ID: {scheduler_id})")
+        LOG.info(f"Adding new update scheduler (ID: {id})")
         try:
             self.__scheduler.add_job(
                 self.update_weconnect,
                 trigger="interval",
                 args=[update_values, callback_function],
                 seconds=interval,
-                id=scheduler_id,
+                id=id,
             )
         except ConflictingIdError as e:
-            LOG.error(f"Update scheduler (ID: {scheduler_id}) already exists")
+            LOG.error(f"Update scheduler (ID: {id}) already exists")
             raise e
 
-    def remove_scheduler(self, scheduler_id: str) -> None:
-        LOG.info(f"Removing update scheduler (ID: {scheduler_id})")
+    def remove_scheduler(self, id: str) -> None:
+        LOG.info(f"Removing update scheduler (ID: {id})")
         try:
-            self.__scheduler.remove_job(job_id=scheduler_id)
+            self.__scheduler.remove_job(job_id=id)
         except KeyError as e:
-            LOG.error(f"Couldn't find update scheduler (ID: {scheduler_id})")
+            LOG.error(f"Couldn't find update scheduler (ID: {id})")
             raise e
 
     def update_weconnect(self, update_domains: list, callback_function=None) -> None:
@@ -74,7 +77,7 @@ class WeConnectUpdater:
             self.__update_led.blink(frequency=20)
             Timer(interval=2, function=self.__update_led.turn_on).start()
             self.__lcd_controller.display_message(
-                "Cannot update WeConnect right now", time_on_screen=3
+                "Cannot Update WeConnect Right Now", time_on_screen=3
             )
             return
 
@@ -87,8 +90,7 @@ class WeConnectUpdater:
                 selective=update_domains,
             )
             
-        except Exception as e:
-            print(e)
+        except Exception:
             self.__can_update = False
             self.__scheduler.remove_all_jobs()
 
@@ -96,10 +98,10 @@ class WeConnectUpdater:
             self.__update_led.turn_on()
 
             self.__lcd_controller.display_message(
-                message="Failed to update weconnect data", time_on_screen=5
+                message="Failed To Update WeConnect Data", time_on_screen=5
             )
             self.__lcd_controller.display_message(
-                message="Trying again in 1 minute", time_on_screen=5
+                message="Trying Again In 1 Minute", time_on_screen=5
             )
             return
 
@@ -188,3 +190,7 @@ class WeConnectUpdater:
             self.add_nighttime_scheduler()
         self.__add_total_update_scheduler()
         self.__add_switcher_schedulers()
+
+    @property
+    def weconnect(self) -> WeConnect:
+        return self.__weconnect
