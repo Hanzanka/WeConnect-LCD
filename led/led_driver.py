@@ -3,12 +3,13 @@ import RPi.GPIO as GPIO
 from threading import Timer, Event
 import logging
 import operator
+from weconnect_id.weconnect_vehicle import WeConnectVehicle
 
 
 LOG = logging.getLogger("led")
 
 
-def load_automated_leds(config: dict, vehicle) -> None:
+def load_automated_leds(config: dict, vehicle: WeConnectVehicle) -> None:
     LOG.debug("Loading automated LEDDrivers")
     led_configs = config["automated leds"]
     for led_config in led_configs:
@@ -26,7 +27,7 @@ class LEDDriverError(Exception):
 
 
 class LEDTrigger:
-    def __init__(self, led_driver, trigger, vehicle) -> None:
+    def __init__(self, led_driver, trigger, vehicle: WeConnectVehicle) -> None:
         LOG.debug(f"Initializing LEDTrigger for LEDDriver (ID: {led_driver.id})")
         self.driver = led_driver
 
@@ -220,8 +221,6 @@ class LEDDriver:
         self.__blinker_frequency = frequency
 
 
-def create_led_driver(led_pin: int, led_id, default_frequency) -> LEDDriver:
-    LOG.info(f"Creating new LEDDriver (ID: {led_id})")
-    return LEDDriver(
-        pin=led_pin, id=led_id, default_blinker_frequency=default_frequency
-    )
+def create_led_driver(pin: int, id, default_frequency) -> LEDDriver:
+    LOG.info(f"Creating new LEDDriver (ID: {id})")
+    return LEDDriver(pin=pin, id=id, default_blinker_frequency=default_frequency)
