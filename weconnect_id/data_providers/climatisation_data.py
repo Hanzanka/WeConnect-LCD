@@ -2,13 +2,13 @@ from weconnect.elements.vehicle import Vehicle
 from weconnect.elements.climatization_status import ClimatizationStatus
 from weconnect.elements.climatization_settings import ClimatizationSettings
 from weconnect.elements.window_heating_status import WindowHeatingStatus
-from vw_weconnect_id.data_providers.vehicle_data import WeconnectVehicleData
-from vw_weconnect_id.data_providers.vehicle_data_property import (
+from weconnect_id.data_providers.vehicle_data import WeconnectVehicleData
+from weconnect_id.data_providers.vehicle_data_property import (
     WeConnectVehicleDataProperty,
 )
 
 
-class WeconnectClimateData(WeconnectVehicleData):
+class WeConnectClimateData(WeconnectVehicleData):
     def __init__(self, vehicle: Vehicle) -> None:
         super().__init__(vehicle, vehicle.domains["climatisation"])
         self.__import_data()

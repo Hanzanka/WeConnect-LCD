@@ -3,14 +3,14 @@ from weconnect.elements.battery_status import BatteryStatus
 from weconnect.elements.charging_status import ChargingStatus
 from weconnect.elements.charging_settings import ChargingSettings
 from weconnect.elements.plug_status import PlugStatus
-from vw_weconnect_id.data_providers.vehicle_data import WeconnectVehicleData
-from vw_weconnect_id.data_providers.vehicle_data_property import (
+from weconnect_id.data_providers.vehicle_data import WeconnectVehicleData
+from weconnect_id.data_providers.vehicle_data_property import (
     CalculatedWeConnectVehicleDataProperty,
     WeConnectVehicleDataProperty,
 )
 
 
-class WeconnectBatteryData(WeconnectVehicleData):
+class WeConnectBatteryData(WeconnectVehicleData):
     def __init__(self, vehicle: Vehicle) -> None:
         super().__init__(vehicle, vehicle.domains["charging"])
         self.__import_data()

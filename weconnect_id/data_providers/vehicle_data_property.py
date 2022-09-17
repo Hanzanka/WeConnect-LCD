@@ -1,6 +1,6 @@
 from datetime import datetime
 import logging
-from vw_weconnect_id.tools.weconnect_logger import (
+from weconnect_id.tools.weconnect_logger import (
     log as log_data,
     WeConnectLoggerError,
 )

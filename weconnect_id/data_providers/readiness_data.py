@@ -1,11 +1,11 @@
-from vw_weconnect_id.data_providers.vehicle_data import WeconnectVehicleData
+from weconnect_id.data_providers.vehicle_data import WeconnectVehicleData
 from weconnect.elements.vehicle import Vehicle
-from vw_weconnect_id.data_providers.vehicle_data_property import (
+from weconnect_id.data_providers.vehicle_data_property import (
     WeConnectVehicleDataProperty,
 )
 
 
-class WeconnectReadinessData(WeconnectVehicleData):
+class WeConnectReadinessData(WeconnectVehicleData):
     def __init__(self, vehicle: Vehicle) -> None:
         super().__init__(vehicle, vehicle.domains["readiness"])
         self.__import_data()
