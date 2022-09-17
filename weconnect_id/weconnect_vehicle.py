@@ -1,33 +1,32 @@
 import logging
 from weconnect.elements.vehicle import Vehicle
 from display.lcd_controller import LCDController
-from vw_weconnect_id.controllers.climate_controller import ClimateController
-from vw_weconnect_id.data_providers.battery_data import WeconnectBatteryData
-from vw_weconnect_id.data_providers.climatisation_data import WeconnectClimateData
-from vw_weconnect_id.data_providers.readiness_data import WeconnectReadinessData
-from vw_weconnect_id.data_providers.vehicle_data_property import (
-    WeconnectVehicleDataProperty,
+from weconnect_id.controllers.climate_controller import ClimateController
+from weconnect_id.data_providers.battery_data import WeConnectBatteryData
+from weconnect_id.data_providers.climatisation_data import WeConnectClimateData
+from weconnect_id.data_providers.readiness_data import WeConnectReadinessData
+from weconnect_id.data_providers.vehicle_data_property import (
+    WeConnectVehicleDataProperty,
 )
-from vw_weconnect_id.tools.weconnect_updater import WeConnectUpdater
+from weconnect_id.tools.weconnect_updater import WeConnectUpdater
 
 
 LOG = logging.getLogger("vehicle")
 
 
-class VolkswagenIdVehicle:
+class WeConnectVehicle:
 
     CAR_BRANDS = {"WCAR": "Volkswagen"}
 
     def __init__(self, vehicle: Vehicle, config: dict) -> None:
         LOG.debug(f"Initializing vehicle (VIN: {vehicle.vin})")
-        self.__import_vehicle_properties(vehicle)
-        self.__setup_vehicle()
+        self.__import_vehicle_properties(vehicle=vehicle)
+        self.__enable_trackers()
 
-        self.__battery_data_provider = WeconnectBatteryData(vehicle)
-        self.__climatisation_data_provider = WeconnectClimateData(vehicle)
-        self.__readiness_data_provider = WeconnectReadinessData(vehicle)
+        self.__battery_data_provider = WeConnectBatteryData(vehicle=vehicle)
+        self.__climatisation_data_provider = WeConnectClimateData(vehicle=vehicle)
+        self.__readiness_data_provider = WeConnectReadinessData(vehicle=vehicle)
 
-        self.__data = {}
         self.__import_vehicle_data()
 
         self.__add_data_property_translations(config=config)
@@ -36,10 +35,10 @@ class VolkswagenIdVehicle:
         self.__climate_controller = None
 
     def setup_climate_controller(
-        self, updater: WeConnectUpdater, lcd_controller: LCDController
+        self, weconnect_updater: WeConnectUpdater, lcd_controller: LCDController
     ) -> None:
         self.__climate_controller = ClimateController(
-            vehicle=self, updater=updater, lcd_controller=lcd_controller
+            vehicle=self, updater=weconnect_updater, lcd_controller=lcd_controller
         )
 
     def __import_vehicle_properties(self, vehicle: Vehicle) -> None:
@@ -50,12 +49,13 @@ class VolkswagenIdVehicle:
         self.__vin = vehicle.vin
         self.__brand_code = vehicle.brandCode
 
-    def __setup_vehicle(self) -> None:
+    def __enable_trackers(self) -> None:
         LOG.debug("Enabling request tracker for climate controller")
         self.__weconnect_vehicle.enableTracker()
 
     def __import_vehicle_data(self) -> None:
         LOG.debug("Importing vehicle data")
+        self.__data = {}
         self.__data.update(self.__battery_data_provider.get_data())
         self.__data.update(self.__climatisation_data_provider.get_data())
         self.__data.update(self.__readiness_data_provider.get_data())
@@ -94,9 +94,7 @@ class VolkswagenIdVehicle:
         if self.__climate_controller is None:
             return
         try:
-            LOG.info(
-                f"Switching vehicle (VIN: {self.__vin}) climate controller mode"
-            )
+            LOG.info(f"Switching vehicle (VIN: {self.__vin}) climate controller mode")
             self.__climate_controller.switch()
         except Exception as e:
             LOG.exception(e)
@@ -112,16 +110,17 @@ class VolkswagenIdVehicle:
         except Exception as e:
             LOG.exception(e)
 
-    def get_data_property(self, data_id: str) -> WeconnectVehicleDataProperty:
-        return self.__data[data_id]
+    def get_data_property(self, data_property_id: str) -> WeConnectVehicleDataProperty:
+        return self.__data[data_property_id]
 
-    def add_callback_function(self, data_id: str, function: callable) -> None:
+    def add_callback_function(self, data_property_id: str, function: callable) -> None:
         LOG.info(
-            f"Adding callback function {function.__name__} to WeconnectVehicleDataProperty (ID: {data_id})"
+            f"Adding callback function {function.__name__} to WeconnectVehicleDataProperty (ID: {data_property_id})"
         )
-        self.__data[data_id].add_callback_function(function)
+        self.__data[data_property_id].add_callback_function(function)
 
-    def get_weconnect_vehicle(self) -> Vehicle:
+    @property
+    def weconnect_vehicle(self) -> Vehicle:
         return self.__weconnect_vehicle
 
     @property
@@ -135,7 +134,7 @@ class VolkswagenIdVehicle:
     @property
     def brand(self) -> str:
         return self.__brand
-    
+
     @property
     def brand_code(self) -> str:
         return self.__brand_code
