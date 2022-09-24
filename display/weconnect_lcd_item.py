@@ -1,6 +1,6 @@
 import logging
-from vw_weconnect_id.data_providers.vehicle_data_property import (
-    WeconnectVehicleDataProperty,
+from weconnect_id.vehicle_data.vehicle_data_property import (
+    WeConnectVehicleDataProperty,
 )
 from display.lcd_item import LCDItem
 
@@ -11,7 +11,7 @@ LOG = logging.getLogger("lcd_item")
 class WeConnectLCDItem(LCDItem):
     def __init__(
         self,
-        data_provider: WeconnectVehicleDataProperty,
+        data_provider: WeConnectVehicleDataProperty,
         title,
         id,
         translate=None,

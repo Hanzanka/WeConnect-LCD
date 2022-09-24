@@ -1,4 +1,4 @@
-from vw_weconnect_id.vehicle import VolkswagenIdVehicle
+from weconnect_id.weconnect_vehicle import WeConnectVehicle
 from display.lcd_controller import LCDController
 import logging
 
@@ -7,18 +7,18 @@ LOG = logging.getLogger("lcd_message")
 
 
 def configure_auto_messages(
-    config: dict, vehicle: VolkswagenIdVehicle, lcd_controller: LCDController
+    config: dict, weconnect_vehicle: WeConnectVehicle, lcd_controller: LCDController
 ) -> None:
     LOG.debug("Initializing WeConnectLCDMessages")
     for message_config in config["automated messages"]:
-        WeConnectLCDMessage(message_config, vehicle, lcd_controller)
+        WeConnectLCDMessage(message_config, weconnect_vehicle, lcd_controller)
 
 
 class WeConnectLCDMessage:
     def __init__(
         self,
         message_config: dict,
-        vehicle: VolkswagenIdVehicle,
+        weconnect_vehicle: WeConnectVehicle,
         lcd_controller: LCDController,
     ) -> None:
         self.__id = message_config["id"]
@@ -30,13 +30,15 @@ class WeConnectLCDMessage:
         self.__message_base = message_config["message base"]
         self.__message_time = message_config["time"]
         self.__translate = message_config["translate"]
-        self.__data_provider = vehicle.get_data_property(
+        self.__data_provider = weconnect_vehicle.get_data_property(
             message_config["data provider id"]
         )
         self.__data_provider.add_callback_function(self.on_data_update)
 
     def on_data_update(self) -> None:
-        value = self.__data_provider.custom_value_format(translate=self.__translate, include_unit=True)
+        value = self.__data_provider.custom_value_format(
+            translate=self.__translate, include_unit=True
+        )
         if self.__selective_messages:
             if self.__data_provider.value == self.__trigger_value:
                 self.__display_message(value)

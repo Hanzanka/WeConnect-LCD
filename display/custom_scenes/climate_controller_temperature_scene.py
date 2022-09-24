@@ -1,6 +1,6 @@
 import logging
 from display.lcd_scene import LCDScene
-from vw_weconnect_id.vehicle import VolkswagenIdVehicle
+from weconnect_id.weconnect_vehicle import WeConnectVehicle
 import numpy
 
 
@@ -11,11 +11,13 @@ class ClimateControllerTemperatureScene(LCDScene):
 
     TEMPERATURES = list(numpy.arange(15.5, 30.5, 0.5))
 
-    def __init__(self, id, lcd_scene_controller, vehicle: VolkswagenIdVehicle) -> None:
+    def __init__(
+        self, id, lcd_scene_controller, weconnect_vehicle: WeConnectVehicle
+    ) -> None:
         super().__init__(id=id, lcd_scene_controller=lcd_scene_controller)
         LOG.debug(f"Initializing ClimateControllerTemperatureScene (ID: {id})")
-        self.__vehicle = vehicle
-        self.__current_temperature = self.__vehicle.get_data_property(
+        self.__weconnect_vehicle = weconnect_vehicle
+        self.__current_temperature = self.__weconnect_vehicle.get_data_property(
             "climate controller target temperature"
         ).value
         self.__selected_temperature = self.__current_temperature
@@ -23,7 +25,7 @@ class ClimateControllerTemperatureScene(LCDScene):
 
     def load(self) -> None:
         LOG.debug(f"Loading ClimateControllerTemperatureScene (ID: {self._id})")
-        self.__current_temperature = self.__vehicle.get_data_property(
+        self.__current_temperature = self.__weconnect_vehicle.get_data_property(
             "climate controller target temperature"
         ).value
         self.__selected_temperature = self.__current_temperature
@@ -69,12 +71,12 @@ class ClimateControllerTemperatureScene(LCDScene):
 
     def __set_temperature(self) -> None:
         LOG.info(
-            f"Changing vehicle (VIN: {self.__vehicle.vin}) climate controller temperature via ClimateControllerTemperatureScene (ID: {self._id})"
+            f"Changing vehicle (VIN: {self.__weconnect_vehicle.vin}) climate controller temperature via ClimateControllerTemperatureScene (ID: {self._id})"
         )
         self._lcd_scene_controller.lcd_controller.display_message(
             "Päivitetään lämpötilaa", 2
         )
-        self.__vehicle.set_climate_controller_temperature(self.__selected_temperature)
+        self.__weconnect_vehicle.set_climate_controller_temperature(self.__selected_temperature)
 
     @property
     def next(self) -> tuple:

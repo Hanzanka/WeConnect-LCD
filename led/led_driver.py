@@ -3,13 +3,12 @@ import RPi.GPIO as GPIO
 from threading import Timer, Event
 import logging
 import operator
-from weconnect_id.weconnect_vehicle import WeConnectVehicle
 
 
 LOG = logging.getLogger("led")
 
 
-def load_automated_leds(config: dict, vehicle: WeConnectVehicle) -> None:
+def load_automated_leds(config: dict, weconnect_vehicle) -> None:
     LOG.debug("Loading automated LEDDrivers")
     led_configs = config["automated leds"]
     for led_config in led_configs:
@@ -18,7 +17,7 @@ def load_automated_leds(config: dict, vehicle: WeConnectVehicle) -> None:
             id=led_config["id"],
             default_blinker_frequency=led_config["default frequency"],
             trigger=led_config["trigger"],
-            vehicle=vehicle,
+            weconnect_vehicle=weconnect_vehicle,
         )
 
 
@@ -27,7 +26,7 @@ class LEDDriverError(Exception):
 
 
 class LEDTrigger:
-    def __init__(self, led_driver, trigger, vehicle: WeConnectVehicle) -> None:
+    def __init__(self, led_driver, trigger, weconnect_vehicle) -> None:
         LOG.debug(f"Initializing LEDTrigger for LEDDriver (ID: {led_driver.id})")
         self.driver = led_driver
 
@@ -47,7 +46,7 @@ class LEDTrigger:
                 }[trigger["operator"]]
             else:
                 self.__trigger_values = trigger["trigger values"]
-            self.__data_provider = vehicle.get_data_property(trigger["data id"])
+            self.__data_provider = weconnect_vehicle.get_data_property(trigger["data id"])
             self.__data_provider.add_callback_function(self.on_data_update)
         except Exception as e:
             raise LEDDriverError(e, True)
@@ -83,7 +82,7 @@ class LEDDriver:
         BLINKING = "blinking"
 
     def __init__(
-        self, pin, id, default_blinker_frequency, trigger=None, vehicle=None
+        self, pin, id, default_blinker_frequency, trigger=None, weconnect_vehicle=None
     ) -> None:
         LOG.debug(f"Creating new LEDDriver (ID: {id}) (PIN: {pin})")
 
@@ -102,13 +101,13 @@ class LEDDriver:
         self.__operation_event = Event()
         self.__operation_event.set()
 
-        if trigger is not None and vehicle is not None:
+        if trigger is not None and weconnect_vehicle is not None:
             self.__trigger_functions = {
                 "on": self.turn_on,
                 "off": self.turn_off,
                 "blink": self.blink,
             }
-            self.__trigger = LEDTrigger(self, trigger, vehicle)
+            self.__trigger = LEDTrigger(self, trigger, weconnect_vehicle)
             self.__load_led_mode()
 
     @property
