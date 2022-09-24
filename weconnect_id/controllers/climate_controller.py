@@ -4,11 +4,11 @@ from weconnect.elements.climatization_status import ClimatizationStatus
 import logging
 from weconnect.elements.generic_status import GenericStatus
 import numpy
-from vw_weconnect_id.tools.weconnect_updater import WeConnectUpdater
+from display.lcd_controller import LCDController
+from weconnect_id.tools.weconnect_updater import WeConnectUpdater
 from weconnect.domain import Domain
 from led.led_driver import create_led_driver
 from time import sleep
-from display.lcd_controller import LCDController
 
 
 LOG = logging.getLogger("climate")
@@ -81,19 +81,25 @@ class ClimateController:
     IN_PROGRESS_REQUEST = GenericStatus.Request.Status.IN_PROGRESS
 
     def __init__(
-        self, vehicle, updater: WeConnectUpdater, lcd_controller: LCDController
+        self,
+        vehicle,
+        weconnect_updater: WeConnectUpdater,
+        lcd_controller: LCDController,
+        weconnect_vehicle_loader
     ) -> None:
         LOG.debug("Initializing ClimateController")
         self.__vehicle = vehicle.weconnect_vehicle
         self.__climate_controls = self.__vehicle.controls.climatizationControl
         self.__check_vehicle_compatibility()
-        
-        self.__updater = updater
+
+        self.__weconnect_updater = weconnect_updater
         self.__operation_led = create_led_driver(
-            led_pin=26, led_id="CLIMATE OPERATION", default_frequency=1
+            pin=26, id="CLIMATE OPERATION", default_frequency=1
         )
+
         self.__lcd_controller = lcd_controller
-        
+        self.__weconnect_vehicle_loader = weconnect_vehicle_loader
+
         self.__climate_state = vehicle.get_data_property("climate controller state")
         self.__climate_settings = self.__vehicle.domains["climatisation"][
             "climatisationSettings"
@@ -109,7 +115,7 @@ class ClimateController:
 
     def switch(self) -> None:
         LOG.info("Requested to switch climate controller state")
-        self.__updater.update_weconnect(update_domains=[Domain.CLIMATISATION])
+        self.__weconnect_updater.update_weconnect(update_domains=[Domain.CLIMATISATION])
         if self.__climate_state.value in self.CLIMATE_CONTROL_VALUES_OFF:
             self.start()
         else:
@@ -117,16 +123,12 @@ class ClimateController:
 
     def start(self) -> None:
         LOG.info("Requested to start climate controller")
-        self.__lcd_controller.display_message(
-            message="Starting A/C", time_on_screen=3
-        )
+        self.__lcd_controller.display_message(message="Starting A/C", time_on_screen=3)
         self.__start_operation(ControlOperation.START)
 
     def stop(self) -> None:
         LOG.info("Requested to stop climate controller")
-        self.__lcd_controller.display_message(
-            message="Stopping A/C", time_on_screen=3
-        )
+        self.__lcd_controller.display_message(message="Stopping A/C", time_on_screen=3)
         self.__start_operation(ControlOperation.STOP)
 
     def set_temperature(self, temperature: float) -> None:
@@ -139,7 +141,9 @@ class ClimateController:
                 LOG.error(error_string)
                 raise TemperatureOutOfRangeError(error_string)
 
-            self.__updater.update_weconnect(update_domains=[Domain.CLIMATISATION])
+            self.__weconnect_updater.update_weconnect(
+                update_domains=[Domain.CLIMATISATION]
+            )
 
             try:
                 LOG.debug(
@@ -157,16 +161,16 @@ class ClimateController:
                     self.__climate_settings.targetTemperature_K.value = (
                         temperature + 273.15
                     )
-                    
+
             except Exception as e:
                 LOG.exception(e)
                 raise FailedToSetTemperatureError(e)
-            
+
             else:
                 LOG.info(
                     f"Successfully updated climate controller target temperature to {temperature}°C"
                 )
-                
+
         except Exception as e:
             LOG.exception(
                 "Failed to update climate controller target temperature value"
@@ -222,12 +226,12 @@ class ClimateController:
 
     def __get_climate_control_state(self) -> ClimatizationStatus.ClimatizationState:
         LOG.debug("Checking current climate controller state")
-        self.__updater.update_weconnect(update_domains=[Domain.CLIMATISATION])
+        self.__weconnect_updater.update_weconnect(update_domains=[Domain.CLIMATISATION])
         return self.__climate_state.value
 
     def __get_current_request_ids(self) -> list:
         LOG.debug("Receiving current climate operation request IDs")
-        self.__updater.update_weconnect(update_domains=[Domain.CLIMATISATION])
+        self.__weconnect_updater.update_weconnect(update_domains=[Domain.CLIMATISATION])
         return [str(request_id) for request_id in self.__climate_requests.keys()]
 
     def __get_request_id(self, ids_before, ids_after) -> str:
@@ -275,6 +279,8 @@ class ClimateController:
             f"Vehicle (VIN: {self.__vehicle.vin}) passed all compatibility checks"
         )
 
+        self.__weconnect_vehicle_loader.disable_vehicle_change()
+
         if operation == ControlOperation.START:
             self.__operation_led.turn_on()
         else:
@@ -282,9 +288,7 @@ class ClimateController:
 
         ids_before = self.__get_current_request_ids()
 
-        LOG.debug(
-            f"Creating new request for operation (OPERATION TYPE: {operation})"
-        )
+        LOG.debug(f"Creating new request for operation (OPERATION TYPE: {operation})")
         self.__operation_running = True
         self.__climate_controls.value = operation
 
@@ -305,13 +309,17 @@ class ClimateController:
                     )
             sleep(5)
 
-        self.__updater.add_new_scheduler(
+        self.__weconnect_updater.add_new_scheduler(
             scheduler_id="CLIMATE",
             update_values=[Domain.CLIMATISATION],
             interval=15,
-            callback_function=self.__update_request_state
+            callback_function=self.__update_request_state,
         )
-        self.__timeout_timer = Timer(function=self.__finish_operation, args=[False, self.__request_id], interval=5 * 60)
+        self.__timeout_timer = Timer(
+            function=self.__finish_operation,
+            args=[False, self.__request_id],
+            interval=5 * 60,
+        )
         self.__timeout_timer.start()
 
     def __update_request_state(self) -> None:
@@ -319,7 +327,7 @@ class ClimateController:
             LOG.error(
                 "There were no climate controller operations running, but update_request_state was still called"
             )
-            self.__updater.remove_scheduler(scheduler_id="CLIMATE")
+            self.__weconnect_updater.remove_scheduler(scheduler_id="CLIMATE")
             return
         LOG.debug(f"Updating request (ID: {self.__request_id}) status")
         try:
@@ -333,8 +341,10 @@ class ClimateController:
                 f"Updating climate controller request (ID: {self.__request_id}) status failed because request with same ID wasn't found"
             )
 
-        LOG.debug(f"Successfully updated request (ID: {self.__request_id}) status to '{self.__request_status}'")
-        
+        LOG.debug(
+            f"Successfully updated request (ID: {self.__request_id}) status to '{self.__request_status}'"
+        )
+
         if self.__request_status == self.SUCCESSFULL_REQUEST:
             LOG.info(
                 f"Climate controller operation request (ID: {self.__request_id}) is successfull"
@@ -350,13 +360,11 @@ class ClimateController:
     def __finish_operation(self, successfull: bool, request_id=None) -> None:
         if request_id is not None and request_id != self.__request_id:
             return
-            
-        LOG.debug(
-            f"Finishing climate controller operation (ID: {self.__request_id})"
-        )
-        
+
+        LOG.debug(f"Finishing climate controller operation (ID: {self.__request_id})")
+
         self.__timeout_timer.cancel()
-        
+
         if successfull:
             self.__lcd_controller.display_message(
                 message=f"A/C State: {self.__climate_state.custom_value_format(translate=False, include_unit=False)}",
@@ -369,8 +377,9 @@ class ClimateController:
             )
             self.__operation_led.blink(frequency=10)
             Timer(interval=3, function=self.__operation_led.turn_off).start()
-            
-        self.__updater.remove_scheduler(scheduler_id="CLIMATE")
+
+        self.__weconnect_updater.remove_scheduler(scheduler_id="CLIMATE")
         self.__operation_running = False
         self.__request_status = None
         self.__request_id = None
+        self.__weconnect_vehicle_loader.enable_vehicle_change()
