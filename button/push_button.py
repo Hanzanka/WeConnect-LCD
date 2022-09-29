@@ -18,20 +18,24 @@ class PushButton:
         self,
         pin: int,
         id,
-        double_click_prevention_time: float,
         click_callback: callable,
-        long_press_callback=None,
-        long_press_time=None,
+        click_args: list = None,
+        long_press_callback: callable = None,
+        long_press_time: float = None,
+        long_press_args: list = None
     ) -> None:
         LOG.debug(f"Initializing PushButton (ID: {id})")
         self.__id = id
         self.__pin = pin
 
         self.__click_callback = click_callback
-        self.__long_press_callback = long_press_callback
-        self.__long_press_time = long_press_time
+        self.__click_args = [] if click_args is None else click_args
 
-        self.__double_click_prevention_time = double_click_prevention_time
+        self.__long_press_callback = long_press_callback
+        if long_press_time is not None and long_press_time < 1:
+            raise ValueError("Long press time must be equal or greater than one second")
+        self.__long_press_time = long_press_time
+        self.__long_press_args = [] if long_press_args is None else long_press_args
 
         self.__press_lock = Lock()
         self.__release_lock = Lock()
@@ -40,10 +44,16 @@ class PushButton:
         self.__press_thread = Thread()
         self.__button_event = Event()
 
-        GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        GPIO.add_event_detect(pin, GPIO.BOTH, callback=self.on_button_event)
+        GPIO.setup(self.__pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-    def on_button_event(self, channel) -> None:
+    def enable(self) -> None:
+        GPIO.remove_event_detect(self.__pin)
+        GPIO.add_event_detect(self.__pin, GPIO.BOTH, callback=self.__on_button_event)
+
+    def disable(self) -> None:
+        GPIO.remove_event_detect(self.__pin)
+
+    def __on_button_event(self, pin) -> None:
         if GPIO.input(self.__pin) == 1:
             if not self.__press_lock.acquire(blocking=False):
                 return
@@ -55,9 +65,7 @@ class PushButton:
             if not self.__release_lock.acquire(blocking=False):
                 return
             self.__released()
-            Timer(
-                self.__double_click_prevention_time, self.__release_press_lock
-            ).start()
+            Timer(0.2, self.__release_press_lock).start()
 
     def __release_press_lock(self) -> None:
         if GPIO.input(self.__pin) == 1:
@@ -68,11 +76,7 @@ class PushButton:
 
     def __wait_for_release(self) -> ButtonAction:
         self.__button_event.wait(
-            timeout=(
-                self.__double_click_prevention_time
-                if self.__long_press_time is None
-                else self.__long_press_time
-            )
+            timeout=(0.2 if self.__long_press_time is None else self.__long_press_time)
         )
 
         if not self.__button_event.is_set():
@@ -106,7 +110,7 @@ class PushButton:
         if button_action == PushButton.ButtonAction.CLICK:
             LOG.info(f"PushButton (ID: {self.__id}) was clicked")
             try:
-                self.__click_callback()
+                self.__click_callback(*self.__click_args)
             except Exception as e:
                 LOG.exception(e)
             return
@@ -114,6 +118,6 @@ class PushButton:
         if button_action == PushButton.ButtonAction.HOLD:
             LOG.info(f"PushButton (ID: {self.__id}) was long pressed")
             try:
-                self.__long_press_callback()
+                self.__long_press_callback(*self.__long_press_args)
             except Exception as e:
                 LOG.exception(e)
