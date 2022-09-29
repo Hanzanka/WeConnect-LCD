@@ -1,6 +1,6 @@
 import logging
 from display.lcd_scene import LCDScene
-from weconnect_id.weconnect_vehicle import WeConnectVehicle
+from weconnect_id.vehicle import WeConnectVehicle
 import numpy
 
 
