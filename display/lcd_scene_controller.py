@@ -10,6 +10,7 @@ LOG = logging.getLogger("lcd_scene_controller")
 class LCDSceneController:
     def __init__(self) -> None:
         LOG.debug("Initializing LCDSceneController")
+        self.__home_scene = None
         self.__selected_scene = None
         self.__last_scenes = {}
         self.__lcd_controller = LCDController(self)
@@ -17,6 +18,15 @@ class LCDSceneController:
     @property
     def lcd_controller(self) -> LCDController:
         return self.__lcd_controller
+
+    def set_home_scene(self, scene: LCDScene) -> None:
+        LOG.info(f"Added new home scene (ID: {scene.id})")
+        self.__home_scene = scene
+
+    def home(self) -> None:
+        LOG.info(f"Loading home scene (ID: {self.__home_scene.id})")
+        self.__last_scenes.clear()
+        self.load_scene(self.__home_scene)
 
     def restore_last_view(self) -> None:
         LOG.debug("Restoring last LCDScene")
@@ -27,8 +37,8 @@ class LCDSceneController:
         if self.__selected_scene.id == scene.id:
             self.__lcd_controller.update_lcd(scene.content)
 
-    def start(self, scene: LCDScene) -> None:
-        LOG.debug("Starting LCDSceneController")
+    def load_scene(self, scene: LCDScene) -> None:
+        LOG.debug(f"Loading LCDScene (ID: {scene.id})")
         self.__selected_scene = scene
         scene.load()
 
