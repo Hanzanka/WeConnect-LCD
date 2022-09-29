@@ -1,4 +1,4 @@
-from weconnect_id.weconnect_vehicle import WeConnectVehicle
+from weconnect_id.vehicle import WeConnectVehicle
 from display.lcd_controller import LCDController
 import logging
 

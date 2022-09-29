@@ -1,5 +1,5 @@
 import logging
-from weconnect_id.vehicle_data.vehicle_data_property import (
+from weconnect_id.data_providers.vehicle_data_property import (
     WeConnectVehicleDataProperty,
 )
 from display.lcd_item import LCDItem
