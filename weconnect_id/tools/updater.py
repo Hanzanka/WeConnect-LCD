@@ -31,7 +31,7 @@ class WeConnectUpdater:
         self.__weconnect = weconnect
         self.__lcd_controller = lcd_controller
         self.__update_led = create_led_driver(
-            pin=5, id="WECONNECT UPDATE", default_frequency=10
+            pin=23, id="WECONNECT UPDATE", default_frequency=10
         )
 
         self.__scheduler = BackgroundScheduler(timezone="Europe/Helsinki")

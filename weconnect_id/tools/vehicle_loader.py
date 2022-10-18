@@ -1,6 +1,6 @@
 from display.lcd_scene_controller import LCDSceneController
 from weconnect_id.vehicle import WeConnectVehicle
-from weconnect_id.tools.weconnect_updater import WeConnectUpdater
+from weconnect_id.tools.updater import WeConnectUpdater
 from button.push_button import PushButton
 import json
 from led.led_driver import load_automated_leds
@@ -31,6 +31,7 @@ class WeConnectVehicleLoader:
         self.__lcd_controller.display_message("Importing Vehicle Data")
         for vehicle_vin, vehicle in self.__weconnect.vehicles.items():
             if vehicle_vin == vin:
+                print(vehicle)
                 weconnect_vehicle = WeConnectVehicle(
                     vehicle=vehicle, config=self.__config
                 )
@@ -50,7 +51,7 @@ class WeConnectVehicleLoader:
             LOG.exception(e)
 
         button_climate = PushButton(
-            pin=21,
+            pin=13,
             id="CLIMATE",
             click_callback=weconnect_vehicle.start_climate_control,
             long_press_callback=weconnect_vehicle.stop_climate_control,
@@ -74,6 +75,9 @@ class WeConnectVehicleLoader:
 
         self.__lcd_scene_controller.set_home_scene(scene=scenes["scene_menu"])
         self.__lcd_scene_controller.load_scene(scene=scenes["scene_menu"])
+        
+        _ = input("press enter to start a/c")
+        weconnect_vehicle.start_climate_control()
 
     @property
     def vehicle_change_allowed(self) -> bool:
