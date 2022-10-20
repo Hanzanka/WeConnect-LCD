@@ -2,13 +2,15 @@ from weconnect.elements.vehicle import Vehicle
 from weconnect.elements.climatization_status import ClimatizationStatus
 from weconnect.elements.climatization_settings import ClimatizationSettings
 from weconnect.elements.window_heating_status import WindowHeatingStatus
-from weconnect_id.data_providers.vehicle_data import WeconnectVehicleData
+from weconnect_id.data_providers.vehicle_data import (
+    WeConnectVehicleData,
+)
 from weconnect_id.data_providers.vehicle_data_property import (
     WeConnectVehicleDataProperty,
 )
 
 
-class WeConnectClimateData(WeconnectVehicleData):
+class WeConnectClimateData(WeConnectVehicleData):
     def __init__(self, vehicle: Vehicle) -> None:
         super().__init__(vehicle, vehicle.domains["climatisation"])
         self.__import_data()
@@ -27,18 +29,18 @@ class WeConnectClimateData(WeconnectVehicleData):
 
     def __get_climate_status(self, climate_status: ClimatizationStatus) -> dict:
         climate_status_data = {}
-        data = climate_status.remainingClimatisationTime_min
-        climate_status_data[data.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        weconnect_element = climate_status.remainingClimatisationTime_min
+        climate_status_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="climate controller time remaining",
-            value=data.value,
+            weconnect_element=weconnect_element,
             desc="Remaining climate controller time",
             category="climate",
             unit="min",
         )
-        data = climate_status.climatisationState
-        climate_status_data[data.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        weconnect_element = climate_status.climatisationState
+        climate_status_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="climate controller state",
-            value=data.value,
+            weconnect_element=weconnect_element,
             desc="Climate controller state",
             category="climate",
         )
@@ -46,46 +48,46 @@ class WeConnectClimateData(WeconnectVehicleData):
 
     def __get_climate_settings(self, climate_settings: ClimatizationSettings) -> dict:
         climate_settings_data = {}
-        data = climate_settings.targetTemperature_C
-        climate_settings_data[data.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        weconnect_element = climate_settings.targetTemperature_C
+        climate_settings_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="climate controller target temperature",
-            value=data.value,
+            weconnect_element=weconnect_element,
             desc="Climate controller target temperature",
             category="climate",
             unit="°C",
         )
-        data = climate_settings.climatisationWithoutExternalPower
-        climate_settings_data[data.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        weconnect_element = climate_settings.climatisationWithoutExternalPower
+        climate_settings_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="climate controller without external power",
-            value=data.value,
+            weconnect_element=weconnect_element,
             desc="Climate control without external power",
             category="climate",
         )
-        data = climate_settings.climatizationAtUnlock
-        climate_settings_data[data.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        weconnect_element = climate_settings.climatizationAtUnlock
+        climate_settings_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="climate controller at unlock",
-            value=data.value,
+            weconnect_element=weconnect_element,
             desc="Start climate control when unlocked",
             category="climate",
         )
-        data = climate_settings.windowHeatingEnabled
-        climate_settings_data[data.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        weconnect_element = climate_settings.windowHeatingEnabled
+        climate_settings_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="windows heating",
-            value=data.value,
+            weconnect_element=weconnect_element,
             desc="Window heating enabled",
             category="climate",
         )
-        data = climate_settings.zoneFrontLeftEnabled
-        climate_settings_data[data.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        weconnect_element = climate_settings.zoneFrontLeftEnabled
+        climate_settings_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="heat left seat",
-            value=data.value,
+            weconnect_element=weconnect_element,
             desc="Heat left front seat",
             category="climate",
         )
-        data = climate_settings.zoneFrontRightEnabled
-        climate_settings_data[data.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        weconnect_element = climate_settings.zoneFrontRightEnabled
+        climate_settings_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="heat right seat",
-            value=data.value,
+            weconnect_element=weconnect_element,
             desc="Heat right front seat",
             category="climate",
         )
@@ -95,17 +97,17 @@ class WeConnectClimateData(WeconnectVehicleData):
         self, window_heating_status: WindowHeatingStatus
     ) -> dict:
         window_heating_data = {}
-        data = window_heating_status.windows["rear"]
-        window_heating_data[data.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        weconnect_element = window_heating_status.windows["rear"]
+        window_heating_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="rear window heating",
-            value=data.windowHeatingState.value,
+            weconnect_element=weconnect_element.windowHeatingState,
             desc="Rear window heating",
             category="climate",
         )
-        data = window_heating_status.windows["front"]
-        window_heating_data[data.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        weconnect_element = window_heating_status.windows["front"]
+        window_heating_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="front window heating",
-            value=data.windowHeatingState.value,
+            weconnect_element=weconnect_element.windowHeatingState,
             desc="Front window heating",
             category="climate",
         )

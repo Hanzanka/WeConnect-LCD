@@ -1,11 +1,13 @@
-from weconnect_id.data_providers.vehicle_data import WeconnectVehicleData
+from weconnect_id.data_providers.vehicle_data import (
+    WeConnectVehicleData,
+)
 from weconnect.elements.vehicle import Vehicle
 from weconnect_id.data_providers.vehicle_data_property import (
     WeConnectVehicleDataProperty,
 )
 
 
-class WeConnectReadinessData(WeconnectVehicleData):
+class WeConnectReadinessData(WeConnectVehicleData):
     def __init__(self, vehicle: Vehicle) -> None:
         super().__init__(vehicle, vehicle.domains["readiness"])
         self.__import_data()
@@ -20,17 +22,17 @@ class WeConnectReadinessData(WeconnectVehicleData):
 
     def __get_connection_state(self, connection_status) -> dict:
         connection_data = {}
-        data = connection_status.isOnline
-        connection_data[data.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        weconnect_element = connection_status.isOnline
+        connection_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="car online",
-            value=data.value,
+            weconnect_element=weconnect_element,
             desc="Car is connected to internet",
             category="readiness",
         )
-        data = connection_status.isActive
-        connection_data[data.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        weconnect_element = connection_status.isActive
+        connection_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="car in use",
-            value=data.value,
+            weconnect_element=weconnect_element,
             desc="Car is in use",
             category="readiness",
         )
@@ -38,10 +40,10 @@ class WeConnectReadinessData(WeconnectVehicleData):
 
     def __get_warnings(self, warnings) -> dict:
         warnings_data = {}
-        data = warnings.insufficientBatteryLevelWarning
-        warnings_data[data.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        weconnect_element = warnings.insufficientBatteryLevelWarning
+        warnings_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="critical battery level",
-            value=data.value,
+            weconnect_element=weconnect_element,
             desc="Car battery is critically low",
             category="readiness",
         )

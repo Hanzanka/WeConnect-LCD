@@ -1,28 +1,42 @@
 from datetime import datetime
 import logging
-from weconnect_id.tools.weconnect_logger import (
+from weconnect_id.tools.logger import (
     log as log_data,
     WeConnectLoggerError,
 )
 from enum import Enum
+from weconnect.addressable import AddressableAttribute, AddressableLeaf
 
 
 LOG = logging.getLogger("data_properties")
 
 
 class WeConnectVehicleDataProperty:
-    def __init__(self, id, value, category, desc=None, unit=None) -> None:
+    def __init__(
+        self,
+        id,
+        weconnect_element: AddressableAttribute,
+        category,
+        desc=None,
+        unit=None,
+    ) -> None:
         LOG.debug(f"Initializing WeconnectVehicleDataProperty (ID: {id})")
         self._id = id
-        self._value = value
         self.__category = category
         self.__desc = desc
         self.__unit = unit
         self.__translations = None
-        if self._value is not None:
-            self._value_string = str(value.value if isinstance(value, Enum) else value)
+        if weconnect_element is not None:
+            self._value = weconnect_element.value
+            self._value_string = str(
+                self._value.value if isinstance(self._value, Enum) else self._value
+            )
             self._time_updated = datetime.now().time().strftime("%H.%M:%S")
             self._date_updated = datetime.now().date().strftime("%d.%m.%Y")
+            weconnect_element.addObserver(
+                observer=self.__update_value,
+                flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
+            )
         self._callback_functions = []
         self.__logging_enabled = False
         self.__logger_path = None
@@ -72,16 +86,25 @@ class WeConnectVehicleDataProperty:
         )
 
     def custom_value_format(self, translate=False, include_unit=True) -> str:
-        return (
-            self.__translations[self._value_string]
-            if translate and self.__translations is not None
-            else self._value_string
-        ) + (self.__unit if include_unit and self.__unit is not None else "")
+        try:
+            return (
+                self.__translations[self._value_string]
+                if translate and self.__translations is not None
+                else self._value_string
+            ) + (self.__unit if include_unit and self.__unit is not None else "")
+        except Exception:
+            return "Error"
 
-    def update_value(self, value) -> None:
+    def __update_value(self, element, flags) -> None:
         LOG.debug(f"Updating WeconnectVehicleDataProperty (ID: {self._id}) value")
-        self._value = value
-        self._value_string = str(value.value if isinstance(value, Enum) else value)
+        self._value = element.value
+        self._value_string = str(
+            self._value.value if isinstance(self._value, Enum) else self._value
+        )
+        element.addObserver(
+            observer=self.__update_value,
+            flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
+        )
         self._time_updated = datetime.now().time().strftime("%H.%M:%S")
         self._date_updated = datetime.now().date().strftime("%d.%m.%Y")
         for function in self._callback_functions:
@@ -123,28 +146,30 @@ class WeConnectVehicleDataProperty:
 
 class CalculatedWeConnectVehicleDataProperty(WeConnectVehicleDataProperty):
     def __init__(
-        self, id, value, category, formula: callable, desc=None, unit=None
+        self, id, weconnect_element, category, formula: callable, desc=None, unit=None
     ) -> None:
         LOG.debug(f"Initializing CalculatedWeConnectVehicleDataProperty (ID: {id})")
-        if not isinstance(value, int) and not isinstance(value, float):
+        if not isinstance(weconnect_element.value, int) and not isinstance(
+            weconnect_element.value, float
+        ):
             raise AttributeError(
                 "Value for CalculatedWeConnectVehicleDataProperty must be int or float"
             )
         super().__init__(
             id=id,
-            value=None,
+            weconnect_element=None,
             desc=desc,
             category=category,
             unit=unit,
         )
         self.__formula = formula
-        calculation = self.__formula(value)
+        calculation = self.__formula(weconnect_element.value)
         self._value = calculation
         self._value_string = str(calculation)
         self._time_updated = datetime.now().time().strftime("%H.%M:%S")
         self._date_updated = datetime.now().date().strftime("%d.%m.%Y")
 
-    def update_value(self, value) -> None:
+    def __update_value(self, value) -> None:
         LOG.debug(
             f"Updating CalculatedWeConnectVehicleDataProperty (ID: {self._id}) value"
         )
