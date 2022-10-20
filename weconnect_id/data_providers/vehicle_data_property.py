@@ -36,6 +36,7 @@ class WeConnectVehicleDataProperty:
             weconnect_element.addObserver(
                 observer=self.__update_value,
                 flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
+                priority=AddressableLeaf.ObserverPriority.INTERNAL_HIGH,
             )
         self._callback_functions = []
         self.__logging_enabled = False
@@ -166,14 +167,19 @@ class CalculatedWeConnectVehicleDataProperty(WeConnectVehicleDataProperty):
         calculation = self.__formula(weconnect_element.value)
         self._value = calculation
         self._value_string = str(calculation)
+        weconnect_element.addObserver(
+            observer=self.__update_value,
+            flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
+            priority=AddressableLeaf.ObserverPriority.INTERNAL_HIGH,
+        )
         self._time_updated = datetime.now().time().strftime("%H.%M:%S")
         self._date_updated = datetime.now().date().strftime("%d.%m.%Y")
 
-    def __update_value(self, value) -> None:
+    def __update_value(self, element, flags) -> None:
         LOG.debug(
             f"Updating CalculatedWeConnectVehicleDataProperty (ID: {self._id}) value"
         )
-        calculation = self.__formula(value)
+        calculation = self.__formula(element.value)
         self._value = calculation
         self._value_string = str(calculation)
         for function in self._callback_functions:
