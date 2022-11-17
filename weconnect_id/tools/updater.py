@@ -5,7 +5,7 @@ from apscheduler.jobstores.base import ConflictingIdError
 import logging
 from weconnect.domain import Domain
 from datetime import datetime, time
-from display.lcd_controller import LCDController
+from display.lcd_scene_controller import LCDSceneController
 from led.led_driver import create_led_driver
 
 
@@ -24,10 +24,9 @@ class WeConnectUpdater:
         self,
         weconnect: WeConnect,
         config: dict,
-        lcd_controller: LCDController,
+        lcd_controller: LCDSceneController,
         start_on_init=True,
     ) -> None:
-        LOG.debug("Initializing WeConnectUpdater")
         self.__weconnect = weconnect
         self.__lcd_controller = lcd_controller
         self.__update_led = create_led_driver(
@@ -46,14 +45,14 @@ class WeConnectUpdater:
             self.start()
 
     def add_new_scheduler(
-        self, id: str, update_values: list, interval: int, callback_function: callable
+        self, id: str, update_values: list, interval: int
     ) -> None:
         LOG.info(f"Adding new update scheduler (ID: {id})")
         try:
             self.__scheduler.add_job(
                 self.update_weconnect,
                 trigger="interval",
-                args=[update_values, callback_function],
+                args=[update_values],
                 seconds=interval,
                 id=id,
             )
@@ -69,11 +68,9 @@ class WeConnectUpdater:
             LOG.error(f"Couldn't find update scheduler (ID: {id})")
             raise e
 
-    def update_weconnect(self, update_domains: list, callback_function=None) -> None:
-        LOG.debug("Updating WeConnect data from server")
-
+    def update_weconnect(self, update_domains: list) -> None:
         if not self.__can_update:
-            LOG.error("Cannot update weconnect because updater faced timeout recently")
+            LOG.error("Cannot update WeConnect because updater faced timeout recently")
             self.__update_led.blink(frequency=20)
             Timer(interval=2, function=self.__update_led.turn_on).start()
             self.__lcd_controller.display_message(
@@ -90,7 +87,8 @@ class WeConnectUpdater:
                 selective=update_domains,
             )
 
-        except Exception:
+        except Exception as e:
+            LOG.exception(e)
             self.__can_update = False
             self.__scheduler.remove_all_jobs()
 
@@ -105,14 +103,10 @@ class WeConnectUpdater:
             )
             return
 
-        LOG.debug("Successfully updated WeConnect data")
         self.__update_led.stop_blinking()
-        if callback_function is not None:
-            callback_function()
 
     def add_daytime_scheduler(self) -> None:
         self.__remove_nighttime_scheduler()
-        LOG.debug("Enabling daytime update scheduler")
         self.__scheduler.add_job(
             self.update_weconnect,
             "interval",
@@ -122,17 +116,13 @@ class WeConnectUpdater:
         )
 
     def __remove_daytime_scheduler(self) -> None:
-        LOG.debug("Disabling daytime update scheduler")
         try:
             self.__scheduler.remove_job(job_id="DAYTIME")
         except KeyError:
-            LOG.exception(
-                "'DAYTIME' update scheduler was not found, this is normal at startup"
-            )
+            pass
 
     def add_nighttime_scheduler(self) -> None:
         self.__remove_daytime_scheduler()
-        LOG.debug("Enabling nighttime update scheduler")
         self.__scheduler.add_job(
             self.update_weconnect,
             "interval",
@@ -142,16 +132,12 @@ class WeConnectUpdater:
         )
 
     def __remove_nighttime_scheduler(self) -> None:
-        LOG.debug("Disabling nighttime update scheduler")
         try:
             self.__scheduler.remove_job(job_id="NIGHTTIME")
         except KeyError:
-            LOG.exception(
-                "'NIGHTTIME' update scheduler was not found, this is normal at startup"
-            )
+            pass
 
     def __add_total_update_scheduler(self) -> None:
-        LOG.debug("Enabling total update scheduler")
         self.__scheduler.add_job(
             self.update_weconnect,
             "interval",
@@ -161,7 +147,6 @@ class WeConnectUpdater:
         )
 
     def __add_switcher_schedulers(self) -> None:
-        LOG.debug("Enabling switcher schedulers")
         self.__scheduler.add_job(
             self.add_daytime_scheduler,
             trigger="cron",
@@ -178,7 +163,6 @@ class WeConnectUpdater:
         )
 
     def start(self) -> None:
-        LOG.debug("Starting weconnect updater")
         if not self.__can_update:
             self.__can_update = True
         start = time(7, 0, 0)
