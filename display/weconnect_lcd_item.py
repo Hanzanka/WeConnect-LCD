@@ -34,4 +34,4 @@ class WeConnectLCDItem(LCDItem):
         LOG.debug(f"Updating WeConnectLCDItem (ID: {self._id}) value")
         self._update_content()
         for scene in self._scenes:
-            scene.update_content()
+            scene.update()
