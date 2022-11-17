@@ -1,5 +1,4 @@
 import logging
-import traceback
 from RPLCD.i2c import CharLCD
 from threading import Event, Timer
 import textwrap
@@ -10,13 +9,7 @@ LOG = logging.getLogger("lcd_controller")
 
 
 class LCDController:
-
-    """
-    Used to control and print data on lcd display
-    """
-
     def __init__(self, lcd_scene_controller) -> None:
-        LOG.debug("Initializing LCDController")
         self.__lcd = CharLCD(
             i2c_expander="PCF8574", address=0x27, port=1, charmap="A00", cols=20, rows=4
         )
@@ -86,38 +79,22 @@ class LCDController:
         self.__darkmode_timer.start()
 
     def __load_custom_characters(self) -> None:
-        LOG.debug("Creating custom lcd characters")
-        upper_left_corner = [0x00, 0x00, 0x00, 0x00, 0x0F, 0x08, 0x08, 0x08]
-        bottom_left_corner = [0x08, 0x08, 0x08, 0x0F, 0x00, 0x00, 0x00, 0x00]
-        upper_right_corner = [0x00, 0x00, 0x00, 0x00, 0x1E, 0x02, 0x02, 0x02]
-        bottom_right_corner = [0x02, 0x02, 0x02, 0x1E, 0x00, 0x00, 0x00, 0x00]
-        top = [0x00, 0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00]
-        bottom = [0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00, 0x00]
-        right_side = [0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02]
-        left_side = [0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08]
-        self.__lcd.create_char(0, upper_left_corner)
-        self.__lcd.create_char(1, top)
-        self.__lcd.create_char(2, upper_right_corner)
-        self.__lcd.create_char(3, right_side)
-        self.__lcd.create_char(4, bottom_right_corner)
-        self.__lcd.create_char(5, bottom)
-        self.__lcd.create_char(6, bottom_left_corner)
-        self.__lcd.create_char(7, left_side)
-
-    def __print_message_square(self) -> None:
-        try:
-            self.__lcd.home()
-            self.__lcd.write_string(
-                "\x00"
-                + 18 * "\x01"
-                + "\x02"
-                + 2 * ("\x07" + 18 * " " + "\x03")
-                + "\x06"
-                + 18 * "\x05"
-                + "\x04"
-            )
-        except Exception:
-            logging.error(traceback.print_exc())
+        battery_empty = [0x0E, 0x1B, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1F]
+        battery_20 = [0x0E, 0x1B, 0x11, 0x11, 0x11, 0x11, 0x1F, 0x1F]
+        battery_50 = [0x0E, 0x1B, 0x11, 0x11, 0x1F, 0x1F, 0x1F, 0x1F]
+        battery_80 = [0x0E, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F]
+        charging = [0x0A, 0x0A, 0x1F, 0x1F, 0x0E, 0x04, 0x04, 0x04]
+        plug_connected = [0x04, 0x04, 0x04, 0x0E, 0x1F, 0x1F, 0x0A, 0x0A]
+        charge_complete = [0x00, 0x01, 0x03, 0x16, 0x1C, 0x08, 0x00, 0x00]
+        climate = [0x04, 0x0A, 0x0A, 0x0E, 0x0E, 0x1F, 0x1F, 0x0E]
+        self.__lcd.create_char(0, battery_empty)
+        self.__lcd.create_char(1, battery_20)
+        self.__lcd.create_char(2, battery_50)
+        self.__lcd.create_char(3, battery_80)
+        self.__lcd.create_char(4, charging)
+        self.__lcd.create_char(5, plug_connected)
+        self.__lcd.create_char(6, charge_complete)
+        self.__lcd.create_char(7, climate)
 
     def clear_message(self) -> None:
         self.__message_on_screen = False
@@ -128,7 +105,7 @@ class LCDController:
             queued_msg = self.__message_queue.get()
             self.display_message(queued_msg[0], queued_msg[1])
 
-    def display_message(self, message, time_on_screen=None) -> None:
+    def display_message(self, message: str, time_on_screen=None) -> None:
         LOG.debug(f"Queued new message (Content: {message})")
         if not self.__message_on_screen:
 
@@ -138,12 +115,13 @@ class LCDController:
                 self.__interactions_enabled = False
                 self.__message_on_screen = True
 
-            self.__print_message_square()
-            splitted = textwrap.wrap(message, 16)
+            splitted = textwrap.wrap(message, 19)
             if len(splitted) == 1:
                 splitted.append(" " * 18)
             for i in range(0, len(splitted)):
                 splitted[i] = splitted[i].center(18)
+
+            self.__lcd.clear()
 
             try:
                 for i in range(0, 2):
@@ -162,9 +140,6 @@ class LCDController:
         else:
             if time_on_screen is not None:
                 self.__message_queue.put((message, time_on_screen))
-                LOG.debug("Message added to message queue")
-            else:
-                LOG.debug("Cannot queue messages with no onscreen time")
 
     @property
     def can_interact(self) -> bool:
