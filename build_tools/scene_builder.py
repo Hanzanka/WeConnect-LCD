@@ -3,11 +3,12 @@ from display.lcd_scene import LCDScene
 from display.lcd_item import LCDItem
 from display.lcd_scene_controller import LCDSceneController
 from display.weconnect_lcd_item import WeConnectLCDItem
+from display.lcd_status_bar import LCDStatusBar
 from weconnect_id.vehicle import WeConnectVehicle
 from display.custom_scenes.climate_controller_temperature_scene import (
     ClimateControllerTemperatureScene,
 )
-from weconnect_id.tools.weconnect_updater import WeConnectUpdater
+from weconnect_id.tools.updater import WeConnectUpdater
 from weconnect.domain import Domain
 
 
@@ -89,5 +90,10 @@ def load_scenes(
             continue
         for item_id in scene["items"]:
             scenes[scene["id"]].add_item(items[item_id])
+
+    lcd_status_bar = LCDStatusBar(
+        weconnect_vehicle=weconnect_vehicle, lcd_scene_controller=lcd_scene_controller
+    )
+    lcd_scene_controller.set_status_bar(lcd_status_bar)
 
     return scenes
