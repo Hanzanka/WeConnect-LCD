@@ -1,11 +1,10 @@
-from weconnect_id.vehicle import WeConnectVehicle
 from weconnect.elements.plug_status import PlugStatus
 from weconnect.elements.charging_status import ChargingStatus
 from weconnect.elements.climatization_status import ClimatizationStatus
 
 
 class LCDStatusBar:
-    def __init__(self, weconnect_vehicle: WeConnectVehicle, lcd_scene_controller) -> None:
+    def __init__(self, weconnect_vehicle, lcd_scene_controller) -> None:
         self.__weconnect_vehicle = weconnect_vehicle
         self.__lcd_scene_controller = lcd_scene_controller
         
