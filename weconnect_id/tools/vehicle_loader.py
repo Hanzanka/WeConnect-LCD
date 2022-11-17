@@ -1,4 +1,3 @@
-from display.lcd_scene_controller import LCDSceneController
 from weconnect_id.vehicle import WeConnectVehicle
 from weconnect_id.tools.updater import WeConnectUpdater
 from button.push_button import PushButton
@@ -15,7 +14,7 @@ LOG = logging.getLogger("vehicle")
 class WeConnectVehicleLoader:
     def __init__(
         self,
-        lcd_scene_controller: LCDSceneController,
+        lcd_scene_controller,
         weconnect_updater: WeConnectUpdater,
         config: dict,
     ) -> None:
@@ -27,7 +26,6 @@ class WeConnectVehicleLoader:
         self.__config = config
 
     def load_vehicle_dependent_items(self, vin: str) -> None:
-
         self.__lcd_controller.display_message("Importing Vehicle Data")
         for vehicle_vin, vehicle in self.__weconnect.vehicles.items():
             if vehicle_vin == vin:
@@ -75,9 +73,6 @@ class WeConnectVehicleLoader:
 
         self.__lcd_scene_controller.set_home_scene(scene=scenes["scene_menu"])
         self.__lcd_scene_controller.load_scene(scene=scenes["scene_menu"])
-        
-        _ = input("press enter to start a/c")
-        weconnect_vehicle.start_climate_control()
 
     @property
     def vehicle_change_allowed(self) -> bool:
