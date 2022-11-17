@@ -7,7 +7,7 @@ class LCDStatusBar:
     def __init__(self, weconnect_vehicle, lcd_scene_controller) -> None:
         self.__weconnect_vehicle = weconnect_vehicle
         self.__lcd_scene_controller = lcd_scene_controller
-        
+
         self.__battery_empty = "\x00"
         self.__battery_20 = "\x01"
         self.__battery_50 = "\x02"
@@ -16,25 +16,25 @@ class LCDStatusBar:
         self.__plug_connected = "\x05"
         self.__charge_complete = "\x06"
         self.__climate_on = "\x07"
-        
+
         self.__battery_icon = None
         self.__charging_icon = None
         self.__climate_icon = None
-        
+
         self.__climate_on_states = [
             ClimatizationStatus.ClimatizationState.HEATING,
             ClimatizationStatus.ClimatizationState.COOLING,
             ClimatizationStatus.ClimatizationState.VENTILATION,
         ]
-        
-        self.__weconnect_vehicle.get_data_property("soc pct").add_callback_function(
-            self.__update_battery_icon
-        )
+
+        self.__weconnect_vehicle.get_data_property(
+            "battery level"
+        ).add_callback_function(self.__update_battery_icon)
         self.__weconnect_vehicle.get_data_property(
             "charge state"
         ).add_callback_function(self.__update_charging_icon)
         self.__weconnect_vehicle.get_data_property(
-            "target soc pct"
+            "target battery level"
         ).add_callback_function(self.__update_charging_icon)
         self.__weconnect_vehicle.get_data_property(
             "charging plug connection status"
@@ -42,11 +42,11 @@ class LCDStatusBar:
         self.__weconnect_vehicle.get_data_property(
             "climate controller state"
         ).add_callback_function(self.__update_climate_icon)
-        
+
         self.__update_battery_icon()
         self.__update_charging_icon()
         self.__update_climate_icon()
-    
+
     @property
     def icons(self) -> list:
         icons_string = ""
@@ -58,7 +58,7 @@ class LCDStatusBar:
         return icons_string
 
     def __update_battery_icon(self) -> None:
-        battery = self.__weconnect_vehicle.get_data_property("soc pct").value
+        battery = self.__weconnect_vehicle.get_data_property("battery level").value
         if battery >= 80:
             self.__battery_icon = self.__battery_80
         elif battery >= 50:
@@ -79,9 +79,9 @@ class LCDStatusBar:
             return
 
         target_soc_pct = self.__weconnect_vehicle.get_data_property(
-            "target soc pct"
+            "target battery level"
         ).value
-        battery = self.__weconnect_vehicle.get_data_property("soc pct").value
+        battery = self.__weconnect_vehicle.get_data_property("battery level").value
         if battery == target_soc_pct:
             self.__charging_icon = self.__charge_complete
             self.__lcd_scene_controller.update_status_bar()

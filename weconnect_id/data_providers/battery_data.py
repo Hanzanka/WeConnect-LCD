@@ -14,7 +14,7 @@ from weconnect_id.data_providers.vehicle_data_property import (
 
 class WeConnectBatteryData(WeConnectVehicleData):
     def __init__(self, vehicle: Vehicle) -> None:
-        super().__init__(vehicle, vehicle.domains["charging"])
+        super().__init__(vehicle)
         self.__import_data()
 
     def __import_data(self) -> None:
@@ -42,7 +42,7 @@ class WeConnectBatteryData(WeConnectVehicleData):
         battery_status_data[weconnect_element.getGlobalAddress()] = []
         battery_status_data[weconnect_element.getGlobalAddress()].append(
             WeConnectVehicleDataProperty(
-                id="soc pct",
+                id="battery level",
                 weconnect_element=weconnect_element,
                 category="battery",
                 desc="Battery charge percentage",
@@ -156,7 +156,7 @@ class WeConnectBatteryData(WeConnectVehicleData):
         charging_settings_data[
             weconnect_element.getGlobalAddress()
         ] = WeConnectVehicleDataProperty(
-            id="target soc pct",
+            id="target battery level",
             weconnect_element=weconnect_element,
             desc="Target battery charge percentage",
             category="battery",
