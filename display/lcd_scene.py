@@ -39,7 +39,16 @@ class LCDScene:
 
     @property
     def content(self) -> list:
+        self._content = [
+            item.content for item in self._items[self.__startpoint : self.__endpoint]
+        ]
+        if self.__title is not None:
+            self._content = [self.__title] + self._content
         return self._content
+
+    @property
+    def has_title(self) -> bool:
+        return self.__title is not None
 
     def add_item(self, lcd_item):
         LOG.debug(f"Adding item (ID: {lcd_item.id}) to LCDScene (ID: {self._id})")
@@ -50,19 +59,14 @@ class LCDScene:
         LOG.debug(f"Loading LCDScene (ID: {self._id})")
         if self.__items_selectable:
             self.__select_item()
-        self.update_content()
+        self.update()
 
     def exit(self) -> None:
         LOG.debug(f"Exiting LCDScene (ID: {self._id})")
         if self.__items_selectable:
             self.__unselect_item()
 
-    def update_content(self) -> None:
-        self._content = [
-            item.content for item in self._items[self.__startpoint : self.__endpoint]
-        ]
-        if self.__title is not None:
-            self._content = [self.__title] + self._content
+    def update(self) -> None:
         self._lcd_scene_controller.refresh(self)
 
     def __select_item(self) -> None:
@@ -80,7 +84,7 @@ class LCDScene:
             self._down()
         if self.__items_selectable:
             self.__select_item()
-        self.update_content()
+        self.update()
 
     def _up(self) -> None:
         if self.__items_selectable:
