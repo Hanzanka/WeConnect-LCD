@@ -5,7 +5,6 @@ from apscheduler.jobstores.base import ConflictingIdError
 import logging
 from weconnect.domain import Domain
 from datetime import datetime, time
-from display.lcd_scene_controller import LCDSceneController
 from led.led_driver import create_led_driver
 
 
@@ -24,11 +23,9 @@ class WeConnectUpdater:
         self,
         weconnect: WeConnect,
         config: dict,
-        lcd_controller: LCDSceneController,
         start_on_init=True,
     ) -> None:
         self.__weconnect = weconnect
-        self.__lcd_controller = lcd_controller
         self.__update_led = create_led_driver(
             pin=23, id="WECONNECT UPDATE", default_frequency=10
         )
@@ -73,9 +70,6 @@ class WeConnectUpdater:
             LOG.error("Cannot update WeConnect because updater faced timeout recently")
             self.__update_led.blink(frequency=20)
             Timer(interval=2, function=self.__update_led.turn_on).start()
-            self.__lcd_controller.display_message(
-                "Cannot Update WeConnect Right Now", time_on_screen=3
-            )
             return
 
         self.__update_led.blink()
@@ -91,16 +85,8 @@ class WeConnectUpdater:
             LOG.exception(e)
             self.__can_update = False
             self.__scheduler.remove_all_jobs()
-
             Timer(function=self.start, interval=60).start()
             self.__update_led.turn_on()
-
-            self.__lcd_controller.display_message(
-                message="Failed To Update WeConnect Data", time_on_screen=5
-            )
-            self.__lcd_controller.display_message(
-                message="Trying Again In 1 Minute", time_on_screen=5
-            )
             return
 
         self.__update_led.stop_blinking()
