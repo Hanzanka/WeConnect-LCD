@@ -29,7 +29,7 @@ class ClimateControllerTemperatureScene(LCDScene):
             "climate controller target temperature"
         ).value
         self.__selected_temperature = self.__current_temperature
-        self.update_content()
+        self.update()
 
     def __get_temperatures_list(self) -> list:
         end_index = self.__index + 2
@@ -41,7 +41,7 @@ class ClimateControllerTemperatureScene(LCDScene):
             temperatures += ["", ""]
         return temperatures
 
-    def update_content(self) -> None:
+    def update(self) -> None:
         temperatures = self.__get_temperatures_list()
         line_1 = f"Aseta{temperatures[3]:>13}"
         line_2 = f"Ilmastoinnin{temperatures[2]:>6}"
@@ -55,7 +55,7 @@ class ClimateControllerTemperatureScene(LCDScene):
             self._up()
         if way == "down":
             self._down()
-        self.update_content()
+        self.update()
 
     def _up(self) -> None:
         if self.__index == len(self.TEMPERATURES) - 1:
@@ -76,7 +76,9 @@ class ClimateControllerTemperatureScene(LCDScene):
         self._lcd_scene_controller.lcd_controller.display_message(
             "Päivitetään lämpötilaa", 2
         )
-        self.__weconnect_vehicle.set_climate_controller_temperature(self.__selected_temperature)
+        self.__weconnect_vehicle.set_climate_controller_temperature(
+            self.__selected_temperature
+        )
 
     @property
     def next(self) -> tuple:

@@ -1,7 +1,7 @@
 from display.lcd_scene import LCDScene
 from display.lcd_item import LCDItem
-from weconnect_id.tools.weconnect_updater import WeConnectUpdater
-from weconnect_id.tools.weconnect_vehicle_loader import WeConnectVehicleLoader
+from weconnect_id.tools.updater import WeConnectUpdater
+from weconnect_id.tools.vehicle_loader import WeConnectVehicleLoader
 
 
 class VehicleSelectionScene(LCDScene):
