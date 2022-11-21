@@ -1,19 +1,12 @@
-import logging
-
-
-LOG = logging.getLogger("lcd_scene")
-
-
 class LCDScene:
     def __init__(
         self,
         id: str,
-        lcd_scene_controller,
+        lcd_scene_controller: None,
         items: list = None,
         title: str = None,
         items_selectable: bool = True,
     ) -> None:
-        LOG.debug(f"Initializing LCDScene (ID: {id})")
         self._id = id
         self._lcd_scene_controller = lcd_scene_controller
 
@@ -50,19 +43,19 @@ class LCDScene:
     def has_title(self) -> bool:
         return self.__title is not None
 
+    def set_lcd_scene_controller(self, lcd_scene_controller) -> None:
+        self._lcd_scene_controller = lcd_scene_controller
+
     def add_item(self, lcd_item):
-        LOG.debug(f"Adding item (ID: {lcd_item.id}) to LCDScene (ID: {self._id})")
         self._items.append(lcd_item)
         lcd_item.add_scene(self)
 
     def load(self) -> None:
-        LOG.debug(f"Loading LCDScene (ID: {self._id})")
         if self.__items_selectable:
             self.__select_item()
         self.update()
 
     def exit(self) -> None:
-        LOG.debug(f"Exiting LCDScene (ID: {self._id})")
         if self.__items_selectable:
             self.__unselect_item()
 
