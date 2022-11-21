@@ -1,9 +1,3 @@
-import logging
-
-
-LOG = logging.getLogger("lcd_item")
-
-
 class LCDItem:
     def __init__(
         self,
@@ -55,7 +49,6 @@ class LCDItem:
             )
 
     def unselect(self) -> None:
-        LOG.debug(f"Unselected LCDItem (ID: {self._id})")
         self._selected = False
         if (
             self._second_title is None
