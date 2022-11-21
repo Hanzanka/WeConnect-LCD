@@ -1,6 +1,6 @@
 import logging
 from RPLCD.i2c import CharLCD
-from threading import Event, Timer
+from threading import Timer, Lock
 import textwrap
 from queue import Queue
 
@@ -18,8 +18,7 @@ class LCDController:
 
         self.__load_custom_characters()
 
-        self.__print_event = Event()
-        self.__print_event.set()
+        self.__print_lock = Lock()
 
         self.__message_timer = None
         self.__message_on_screen = False
@@ -29,13 +28,6 @@ class LCDController:
         self.__interactions_enabled = True
 
         self.display_message("WeConnect-LCD Is Starting")
-
-    def __ready(self) -> None:
-        self.__print_event.set()
-
-    def __wait(self) -> None:
-        self.__print_event.wait()
-        self.__print_event.clear()
 
     def __content_into_string(self, content) -> str:
         if len(max(content, key=len)) > 20:
@@ -53,13 +45,13 @@ class LCDController:
             return
 
         if not self.__message_on_screen:
-            self.__wait()
+            self.__print_lock.acquire()
             try:
                 self.__lcd.cursor_pos = (0, 0)
                 self.__lcd.write_string(self.__content_into_string(content))
             except Exception as e:
                 LOG.exception(e)
-            self.__ready()
+            self.__print_lock.release()
 
     def backlight_on(self) -> None:
         if self.__darkmode_timer.is_alive():
@@ -110,7 +102,7 @@ class LCDController:
         if not self.__message_on_screen:
 
             self.backlight_on()
-            self.__wait()
+            self.__print_lock.acquire()
             if time_on_screen is not None:
                 self.__interactions_enabled = False
                 self.__message_on_screen = True
@@ -129,7 +121,7 @@ class LCDController:
                     self.__lcd.write_string(splitted[i])
             except Exception as e:
                 LOG.exception(e)
-            self.__ready()
+            self.__print_lock.release()
 
             if time_on_screen is not None:
                 self.__message_timer = Timer(
