@@ -88,7 +88,7 @@ class ClimateController:
         self.__vehicle = weconnect_vehicle.api_vehicle
         self.__weconnect_updater = weconnect_updater
         self.__operation_led = create_led_driver(
-            pin=22, id="CLIMATE OPERATION", default_frequency=1
+            pin=6, id="CLIMATE OPERATION", default_frequency=1
         )
         self.__lcd_controller = lcd_controller
         self.__weconnect_vehicle_loader = weconnect_vehicle_loader
@@ -143,9 +143,8 @@ class ClimateController:
             )
 
         try:
-
             self.__lcd_controller.display_message(
-                f"Päivitetään Lämpötilaa -> {temperature}°C", time_on_screen=5
+                f"Päivitetään Lämpötila > {temperature}°C", time_on_screen=5
             )
 
             self.__climate_settings.targetTemperature_C.value = temperature
@@ -246,11 +245,6 @@ class ClimateController:
 
         self.__weconnect_vehicle_loader.disable_vehicle_change()
 
-        if operation == ControlOperation.START:
-            self.__operation_led.turn_on()
-        else:
-            self.__operation_led.blink(frequency=2)
-
         requests_before = self.__get_current_requests()
 
         self.__operation_running = True
@@ -272,6 +266,11 @@ class ClimateController:
                 if tries == 4:
                     raise e
             sleep(5)
+
+        if operation == ControlOperation.START:
+            self.__operation_led.turn_on()
+        else:
+            self.__operation_led.blink(frequency=2)
 
         self.__weconnect_updater.add_new_scheduler(
             id="CLIMATE", update_values=[Domain.CLIMATISATION], interval=15
