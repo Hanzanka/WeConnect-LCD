@@ -23,6 +23,10 @@ class ClimateControllerTemperatureScene(LCDScene):
         self.__selected_temperature = self.__current_temperature
         self.__index = self.TEMPERATURES.index(self.__selected_temperature)
 
+    @property
+    def content(self) -> list:
+        return self._content
+
     def load(self) -> None:
         LOG.debug(f"Loading ClimateControllerTemperatureScene (ID: {self._id})")
         self.__current_temperature = self.__weconnect_vehicle.get_data_property(
@@ -70,12 +74,6 @@ class ClimateControllerTemperatureScene(LCDScene):
         self.__selected_temperature = self.TEMPERATURES[self.__index]
 
     def __set_temperature(self) -> None:
-        LOG.info(
-            f"Changing vehicle (VIN: {self.__weconnect_vehicle.vin}) climate controller temperature via ClimateControllerTemperatureScene (ID: {self._id})"
-        )
-        self._lcd_scene_controller.lcd_controller.display_message(
-            "Päivitetään lämpötilaa", 2
-        )
         self.__weconnect_vehicle.set_climate_controller_temperature(
             self.__selected_temperature
         )
