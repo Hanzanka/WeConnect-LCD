@@ -49,7 +49,7 @@ class WeConnectVehicleLoader:
             LOG.exception(e)
 
         button_climate = PushButton(
-            pin=self.__config["manual pin layout"]["button climate"],
+            pin=self.__config["pin layout"]["button climate"],
             id="CLIMATE",
             click_callback=weconnect_vehicle.start_climate_control,
             long_press_callback=weconnect_vehicle.stop_climate_control,
