@@ -10,7 +10,6 @@ class VehicleSelectionScene(LCDScene):
         id: str,
         lcd_scene_controller,
         weconnect_updater: WeConnectUpdater,
-        config: dict,
         weconnect_vehicle_loader: WeConnectVehicleLoader,
         items: list = None,
         title: str = None,
@@ -20,13 +19,12 @@ class VehicleSelectionScene(LCDScene):
 
         self.__weconnect_vehicle_loader = weconnect_vehicle_loader
         self.__weconnect_updater = weconnect_updater
-        vin_list = list(self.__weconnect_updater.weconnect.vehicles.keys())
-        self.__config = config
+        vehicle_list = self.__weconnect_updater.weconnect.vehicles
 
-        for vin in vin_list:
+        for vin, vehicle in vehicle_list.items():
             self.add_item(
                 LCDItem(
-                    title=vin,
+                    title=vehicle.nickname,
                     id=f"item_{vin}",
                     target=self.__select_vehicle,
                     target_args=[vin],
@@ -35,10 +33,7 @@ class VehicleSelectionScene(LCDScene):
 
     def __select_vehicle(self, vin: str) -> None:
         self.__weconnect_vehicle_loader.load_vehicle_dependent_items(
-            vin=vin,
-            lcd_scene_controller=self._lcd_scene_controller,
-            updater=self.__weconnect_updater,
-            config=self.__config,
+            vin=vin
         )
 
     @property
