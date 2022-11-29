@@ -6,9 +6,9 @@ from weconnect_id.data_providers.battery_data import WeConnectBatteryData
 from weconnect_id.data_providers.climatisation_data import WeConnectClimateData
 from weconnect_id.data_providers.readiness_data import WeConnectReadinessData
 from weconnect_id.data_providers.vehicle_data_property import (
-    WeConnectVehicleDataProperty,
+    WeConnectVehicleDataProperty
 )
-from weconnect_id.tools.weconnect_updater import WeConnectUpdater
+from weconnect_id.tools.updater import WeConnectUpdater
 
 
 LOG = logging.getLogger("vehicle")
@@ -35,15 +35,21 @@ class WeConnectVehicle:
         self.__climate_controller = None
 
     def setup_climate_controller(
-        self, weconnect_updater: WeConnectUpdater, lcd_controller: LCDController
+        self,
+        weconnect_updater: WeConnectUpdater,
+        lcd_controller: LCDController,
+        weconnect_vehicle_loader,
     ) -> None:
         self.__climate_controller = ClimateController(
-            vehicle=self, updater=weconnect_updater, lcd_controller=lcd_controller
+            weconnect_vehicle=self,
+            weconnect_updater=weconnect_updater,
+            lcd_controller=lcd_controller,
+            weconnect_vehicle_loader=weconnect_vehicle_loader,
         )
 
     def __import_vehicle_properties(self, vehicle: Vehicle) -> None:
         LOG.debug("Importing vehicle properties")
-        self.__weconnect_vehicle = vehicle
+        self.__api_vehicle = vehicle
         self.__brand = self.CAR_BRANDS[vehicle.devicePlatform.value.value]
         self.__model = vehicle.model
         self.__vin = vehicle.vin
@@ -51,7 +57,7 @@ class WeConnectVehicle:
 
     def __enable_trackers(self) -> None:
         LOG.debug("Enabling request tracker for climate controller")
-        self.__weconnect_vehicle.enableTracker()
+        self.__api_vehicle.enableTracker()
 
     def __import_vehicle_data(self) -> None:
         LOG.debug("Importing vehicle data")
@@ -120,8 +126,8 @@ class WeConnectVehicle:
         self.__data[data_property_id].add_callback_function(function)
 
     @property
-    def weconnect_vehicle(self) -> Vehicle:
-        return self.__weconnect_vehicle
+    def api_vehicle(self) -> Vehicle:
+        return self.__api_vehicle
 
     @property
     def vin(self) -> str:
