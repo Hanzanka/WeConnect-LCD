@@ -27,7 +27,9 @@ class WeConnectUpdater:
     ) -> None:
         self.__weconnect = weconnect
         self.__update_led = create_led_driver(
-            pin=23, id="WECONNECT UPDATE", default_frequency=10
+            pin=config["pin layout"]["led updater"],
+            id="WECONNECT UPDATE",
+            default_frequency=10,
         )
 
         self.__scheduler = BackgroundScheduler(timezone="Europe/Helsinki")
@@ -41,9 +43,7 @@ class WeConnectUpdater:
         if start_on_init:
             self.start()
 
-    def add_new_scheduler(
-        self, id: str, update_values: list, interval: int
-    ) -> None:
+    def add_new_scheduler(self, id: str, update_values: list, interval: int) -> None:
         LOG.info(f"Adding new update scheduler (ID: {id})")
         try:
             self.__scheduler.add_job(
@@ -151,8 +151,8 @@ class WeConnectUpdater:
     def start(self) -> None:
         if not self.__can_update:
             self.__can_update = True
-        start = time(7, 0, 0)
-        end = time(23, 00, 0)
+        start = time(6, 0, 0)
+        end = time(21, 00, 0)
         now = datetime.now().time()
         if start <= now and now <= end:
             self.add_daytime_scheduler()
