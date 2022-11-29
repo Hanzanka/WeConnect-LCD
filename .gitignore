@@ -1,4 +1,4 @@
-data/
+vehicle_data/
 .vscode/
 *__pycache__
 config.json
