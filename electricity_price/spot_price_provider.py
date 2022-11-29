@@ -31,7 +31,6 @@ class SpotPriceProvider:
         )
 
     def __update(self) -> None:
-        print("updating spot data")
         with urllib.request.urlopen("https://api.spot-hinta.fi/Today") as url:
             data = json.loads(url.read().decode())
 
@@ -64,7 +63,7 @@ class SpotPriceProvider:
             title="Hinta Nyt",
             id="item_spot_price_now",
             content_centering=False,
-            second_title=str(self.__price_now) + "C",
+            second_title=str(self.__price_now) + "C/kWh",
             target=self.__prices_scene,
         )
         self.__items_created = True
@@ -75,7 +74,7 @@ class SpotPriceProvider:
             self.__price_items[hour].update_content(
                 second_title=str(self.__prices[hour]["PriceWithTax"]) + "C/kWh",
             )
-        self.__price_now_item.update_content(second_title=str(self.__price_now) + "C")
+        self.__price_now_item.update_content(second_title=str(self.__price_now) + "C/kWh")
 
     @property
     def prices(self) -> dict:
