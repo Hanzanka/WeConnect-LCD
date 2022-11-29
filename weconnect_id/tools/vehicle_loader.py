@@ -5,7 +5,7 @@ import json
 from led.led_driver import load_automated_leds
 import logging
 from display.weconnect_lcd_message import configure_auto_messages
-from build_tools.scene_builder import load_scenes
+from build_tools.scene_builder import SceneBuilder
 
 
 LOG = logging.getLogger("vehicle")
@@ -17,6 +17,7 @@ class WeConnectVehicleLoader:
         lcd_scene_controller,
         weconnect_updater: WeConnectUpdater,
         config: dict,
+        scene_builder: SceneBuilder,
     ) -> None:
         self.__lcd_scene_controller = lcd_scene_controller
         self.__lcd_controller = lcd_scene_controller.lcd_controller
@@ -24,6 +25,7 @@ class WeConnectVehicleLoader:
         self.__weconnect_updater = weconnect_updater
         self.__weconnect = weconnect_updater.weconnect
         self.__config = config
+        self.__scene_builder = scene_builder
 
     def load_vehicle_dependent_items(self, vin: str) -> None:
         self.__lcd_controller.display_message("Importing Vehicle Data")
@@ -36,20 +38,18 @@ class WeConnectVehicleLoader:
                 weconnect_vehicle.setup_climate_controller(
                     weconnect_updater=self.__weconnect_updater,
                     lcd_controller=self.__lcd_controller,
-                    weconnect_vehicle_loader=self
+                    weconnect_vehicle_loader=self,
                 )
 
         try:
-            with open(
-                "/home/ville/python/WeConnect-LCD/config.json", "w"
-            ) as config_file:
+            with open(self.__config["paths"]["config"], "w") as config_file:
                 self.__config["selected vehicle vin"] = vin
                 json.dump(self.__config, config_file, indent=4)
         except FileNotFoundError as e:
             LOG.exception(e)
 
         button_climate = PushButton(
-            pin=13,
+            pin=self.__config["manual pin layout"]["button climate"],
             id="CLIMATE",
             click_callback=weconnect_vehicle.start_climate_control,
             long_press_callback=weconnect_vehicle.stop_climate_control,
@@ -58,12 +58,7 @@ class WeConnectVehicleLoader:
         button_climate.enable()
 
         self.__lcd_controller.display_message("Loading Scenes")
-        scenes = load_scenes(
-            config=self.__config,
-            weconnect_vehicle=weconnect_vehicle,
-            lcd_scene_controller=self.__lcd_scene_controller,
-            weconnect_updater=self.__weconnect_updater,
-        )
+        scenes = self.__scene_builder.load_scenes(weconnect_vehicle=weconnect_vehicle)
 
         self.__lcd_controller.display_message("Initializing Automated Leds")
         load_automated_leds(config=self.__config, weconnect_vehicle=weconnect_vehicle)
