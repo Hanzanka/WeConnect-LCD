@@ -3,4 +3,4 @@ vehicle_data/
 *__pycache__
 config.json
 application_logs/
-secret_items.pyg
+secret_items.py
