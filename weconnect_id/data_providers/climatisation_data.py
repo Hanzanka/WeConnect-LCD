@@ -12,7 +12,7 @@ from weconnect_id.data_providers.vehicle_data_property import (
 
 class WeConnectClimateData(WeConnectVehicleData):
     def __init__(self, vehicle: Vehicle) -> None:
-        super().__init__(vehicle, vehicle.domains["climatisation"])
+        super().__init__(vehicle)
         self.__import_data()
 
     def __import_data(self) -> dict:
@@ -60,14 +60,14 @@ class WeConnectClimateData(WeConnectVehicleData):
         climate_settings_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="climate controller without external power",
             weconnect_element=weconnect_element,
-            desc="Climate control without external power",
+            desc="Climate controller without external power",
             category="climate",
         )
         weconnect_element = climate_settings.climatizationAtUnlock
         climate_settings_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
             id="climate controller at unlock",
             weconnect_element=weconnect_element,
-            desc="Start climate control when unlocked",
+            desc="Start climate controller when unlocked",
             category="climate",
         )
         weconnect_element = climate_settings.windowHeatingEnabled

@@ -9,7 +9,7 @@ from weconnect_id.data_providers.vehicle_data_property import (
 
 class WeConnectReadinessData(WeConnectVehicleData):
     def __init__(self, vehicle: Vehicle) -> None:
-        super().__init__(vehicle, vehicle.domains["readiness"])
+        super().__init__(vehicle)
         self.__import_data()
 
     def __import_data(self) -> None:
@@ -23,14 +23,18 @@ class WeConnectReadinessData(WeConnectVehicleData):
     def __get_connection_state(self, connection_status) -> dict:
         connection_data = {}
         weconnect_element = connection_status.isOnline
-        connection_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        connection_data[
+            weconnect_element.getGlobalAddress()
+        ] = WeConnectVehicleDataProperty(
             id="car online",
             weconnect_element=weconnect_element,
             desc="Car is connected to internet",
             category="readiness",
         )
         weconnect_element = connection_status.isActive
-        connection_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        connection_data[
+            weconnect_element.getGlobalAddress()
+        ] = WeConnectVehicleDataProperty(
             id="car in use",
             weconnect_element=weconnect_element,
             desc="Car is in use",
@@ -41,7 +45,9 @@ class WeConnectReadinessData(WeConnectVehicleData):
     def __get_warnings(self, warnings) -> dict:
         warnings_data = {}
         weconnect_element = warnings.insufficientBatteryLevelWarning
-        warnings_data[weconnect_element.getGlobalAddress()] = WeConnectVehicleDataProperty(
+        warnings_data[
+            weconnect_element.getGlobalAddress()
+        ] = WeConnectVehicleDataProperty(
             id="critical battery level",
             weconnect_element=weconnect_element,
             desc="Car battery is critically low",

@@ -102,10 +102,6 @@ class WeConnectVehicleDataProperty:
         self._value_string = str(
             self._value.value if isinstance(self._value, Enum) else self._value
         )
-        element.addObserver(
-            observer=self.__update_value,
-            flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
-        )
         self._time_updated = datetime.now().time().strftime("%H.%M:%S")
         self._date_updated = datetime.now().date().strftime("%d.%m.%Y")
         for function in self._callback_functions:
