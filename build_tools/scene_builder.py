@@ -31,10 +31,7 @@ class SceneBuilder:
         self.__lcd_scene_controller = lcd_scene_controller
         self.__spot_price_provider = spot_price_provider
 
-    def load_scenes(
-        self,
-        weconnect_vehicle: WeConnectVehicle
-    ) -> dict:
+    def load_scenes(self, weconnect_vehicle: WeConnectVehicle) -> dict:
         custom_scenes = {
             "climate temperature": ClimateControllerTemperatureScene(
                 lcd_scene_controller=self.__lcd_scene_controller,
@@ -93,7 +90,7 @@ class SceneBuilder:
                     id=item["id"],
                     translate=item["translate"],
                     content_centering=item["content centering"],
-                    target=(None if "target" not in item.keys() else item["target"])
+                    target=(scenes[item["target"]] if "target" in item else None),
                 )
             elif item["type"] == "custom":
                 items[item["id"]] = custom_items[item["custom item id"]]
