@@ -4,3 +4,4 @@ vehicle_data/
 config.json
 main.py
 application_logs/
+secret_items.pyg
