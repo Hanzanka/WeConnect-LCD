@@ -33,7 +33,9 @@ class LCDItem:
     def select(self) -> None:
         self._selected = True
         if self.__content_centering:
-            self._content = f">{self._title} {self._second_title}".center(20)
+            self._content = f">{self._title}{' ' + self._second_title if self._second_title is not None else ''}".center(
+                20
+            )
         else:
             self._content = (
                 f">{self._title}{self._second_title:>{19 - len(self._title)}}"
@@ -42,7 +44,9 @@ class LCDItem:
     def unselect(self) -> None:
         self._selected = False
         if self.__content_centering:
-            self._content = f"{self._title} {self._second_title}".center(20)
+            self._content = f"{self._title}{' ' + self._second_title if self._second_title is not None else ''}".center(
+                20
+            )
         else:
             self._content = (
                 f"{self._title}{self._second_title:>{20 - len(self._title)}}"
