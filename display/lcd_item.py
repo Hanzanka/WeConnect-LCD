@@ -16,8 +16,7 @@ class LCDItem:
         self.__content_centering = content_centering
         self._scenes = []
         self._selected = False
-        if title is not None:
-            self.unselect()
+        self.unselect()
 
     def update_content(self, title=None, second_title=None) -> None:
         if title is not None:
@@ -33,16 +32,8 @@ class LCDItem:
 
     def select(self) -> None:
         self._selected = True
-        if (
-            self._second_title is None
-            or self._second_title is not None
-            and self.__content_centering
-        ):
-            self._content = (
-                f">{self._title}".center(20)
-                if self.__content_centering
-                else f">{self._title}"
-            )
+        if self.__content_centering:
+            self._content = f">{self._title} {self._second_title}".center(20)
         else:
             self._content = (
                 f">{self._title}{self._second_title:>{19 - len(self._title)}}"
@@ -50,14 +41,8 @@ class LCDItem:
 
     def unselect(self) -> None:
         self._selected = False
-        if (
-            self._second_title is None
-            or self._second_title is not None
-            and self.__content_centering
-        ):
-            self._content = (
-                self._title.center(20) if self.__content_centering else self._title
-            )
+        if self.__content_centering:
+            self._content = f"{self._title} {self._second_title}".center(20)
         else:
             self._content = (
                 f"{self._title}{self._second_title:>{20 - len(self._title)}}"
@@ -75,10 +60,6 @@ class LCDItem:
         if callable(self.__target):
             return self.__target, self.__target_args
         return self.__target
-
-    @target.setter
-    def target(self, target) -> None:
-        self.__target = target
 
     @property
     def id(self):
