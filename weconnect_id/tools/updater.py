@@ -4,7 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.base import ConflictingIdError
 import logging
 from weconnect.domain import Domain
-from datetime import datetime, time
+from datetime import datetime
 from led.led_driver import create_led_driver
 
 
@@ -17,14 +17,9 @@ class WeConnectUpdaterError(Exception):
 
 class WeConnectUpdater:
 
-    UPDATE_VALUES = [Domain.CHARGING, Domain.CLIMATISATION, Domain.READINESS]
+    DOMAINS = [Domain.CHARGING, Domain.CLIMATISATION, Domain.READINESS]
 
-    def __init__(
-        self,
-        weconnect: WeConnect,
-        config: dict,
-        start_on_init=True,
-    ) -> None:
+    def __init__(self, weconnect: WeConnect, config: dict) -> None:
         self.__weconnect = weconnect
         self.__update_led = create_led_driver(
             pin=config["pin layout"]["led updater"],
@@ -36,69 +31,62 @@ class WeConnectUpdater:
         self.__scheduler.start()
 
         self.__config = config["update rate"]
-        self.__can_update = True
+        self.__nighttime = datetime.strptime(config["nighttime"], "%H.%M.%S")
+        self.__daytime = datetime.strptime(config["daytime"], "%H.%M.%S")
 
-        self.update_weconnect(update_domains=[Domain.ALL])
+        self.update_weconnect(domains=[Domain.ALL])
 
-        if start_on_init:
-            self.start()
+        self.__start()
 
-    def add_new_scheduler(self, id: str, update_values: list, interval: int) -> None:
-        LOG.info(f"Adding new update scheduler (ID: {id})")
+    def add_scheduler(self, id: str, domains: list, interval: int) -> None:
         try:
             self.__scheduler.add_job(
                 self.update_weconnect,
                 trigger="interval",
-                args=[update_values],
+                args=[domains],
                 seconds=interval,
                 id=id,
             )
         except ConflictingIdError as e:
-            LOG.error(f"Update scheduler (ID: {id}) already exists")
             raise e
 
     def remove_scheduler(self, id: str) -> None:
-        LOG.info(f"Removing update scheduler (ID: {id})")
         try:
             self.__scheduler.remove_job(job_id=id)
         except KeyError as e:
-            LOG.error(f"Couldn't find update scheduler (ID: {id})")
             raise e
 
-    def update_weconnect(self, update_domains: list) -> None:
-        if not self.__can_update:
-            LOG.error("Cannot update WeConnect because updater faced timeout recently")
-            self.__update_led.blink(frequency=20)
-            Timer(interval=2, function=self.__update_led.turn_on).start()
-            return
+    def update_weconnect(self, domains: list) -> None:
 
         self.__update_led.blink()
 
         try:
             self.__weconnect.update(
                 updatePictures=False,
-                updateCapabilities=(True if Domain.ALL in update_domains else False),
-                selective=update_domains,
+                updateCapabilities=(True if Domain.ALL in domains else False),
+                selective=domains,
             )
 
         except Exception as e:
             LOG.exception(e)
-            self.__can_update = False
-            self.__scheduler.remove_all_jobs()
-            Timer(function=self.start, interval=60).start()
+            self.__scheduler.pause()
+            Timer(function=self.__scheduler.resume, interval=60).start()
             self.__update_led.turn_on()
-            return
+            raise e
+
+        if self.__scheduler.state == 2:
+            self.__scheduler.resume()
 
         self.__update_led.stop_blinking()
 
-    def add_daytime_scheduler(self) -> None:
+    def __add_daytime_scheduler(self) -> None:
         self.__remove_nighttime_scheduler()
         self.__scheduler.add_job(
             self.update_weconnect,
             "interval",
             seconds=self.__config["day"],
             id="DAYTIME",
-            args=[self.UPDATE_VALUES],
+            args=[self.DOMAINS],
         )
 
     def __remove_daytime_scheduler(self) -> None:
@@ -107,14 +95,14 @@ class WeConnectUpdater:
         except KeyError:
             pass
 
-    def add_nighttime_scheduler(self) -> None:
+    def __add_nighttime_scheduler(self) -> None:
         self.__remove_daytime_scheduler()
         self.__scheduler.add_job(
             self.update_weconnect,
             "interval",
             seconds=self.__config["night"],
             id="NIGHTTIME",
-            args=[self.UPDATE_VALUES],
+            args=[self.DOMAINS],
         )
 
     def __remove_nighttime_scheduler(self) -> None:
@@ -134,30 +122,30 @@ class WeConnectUpdater:
 
     def __add_switcher_schedulers(self) -> None:
         self.__scheduler.add_job(
-            self.add_daytime_scheduler,
+            self.__add_daytime_scheduler,
             trigger="cron",
-            minute=0,
-            hour=7,
+            hour=self.__daytime.hour,
+            minute=self.__daytime.minute,
+            second=self.__daytime.second,
             id="DAYTIME_ENABLER",
         )
         self.__scheduler.add_job(
-            self.add_nighttime_scheduler,
+            self.__add_nighttime_scheduler,
             trigger="cron",
-            minute=0,
-            hour=23,
+            hour=self.__nighttime.hour,
+            minute=self.__nighttime.minute,
+            second=self.__nighttime.second,
             id="NIGHTTIME_ENABLER",
         )
 
-    def start(self) -> None:
-        if not self.__can_update:
-            self.__can_update = True
-        start = time(6, 0, 0)
-        end = time(21, 00, 0)
+    def __start(self) -> None:
+        start = self.__daytime.time()
+        end = self.__nighttime.time()
         now = datetime.now().time()
         if start <= now and now <= end:
-            self.add_daytime_scheduler()
+            self.__add_daytime_scheduler()
         else:
-            self.add_nighttime_scheduler()
+            self.__add_nighttime_scheduler()
         self.__add_total_update_scheduler()
         self.__add_switcher_schedulers()
 
