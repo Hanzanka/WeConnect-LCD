@@ -10,6 +10,10 @@ from led.led_driver import create_led_driver
 LOG = logging.getLogger("weconnect_updater")
 
 
+class WeConnectUpdaterError(Exception):
+    pass
+
+
 class WeConnectUpdater:
 
     DOMAINS = [Domain.CHARGING, Domain.CLIMATISATION, Domain.READINESS]
