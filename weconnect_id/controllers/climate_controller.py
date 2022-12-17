@@ -4,11 +4,12 @@ from weconnect.elements.climatization_status import ClimatizationStatus
 import logging
 from weconnect.elements.generic_status import GenericStatus
 from display.lcd_controller import LCDController
-from weconnect_id.tools.updater import WeConnectUpdater
+from weconnect_id.tools.updater import WeConnectUpdater, WeConnectUpdaterError
 from weconnect.domain import Domain
 from led.led_driver import create_led_driver
 from time import sleep
 from weconnect.addressable import AddressableLeaf
+from enum import Enum
 
 
 LOG = logging.getLogger("climate")
@@ -51,6 +52,9 @@ class TemperatureOutOfRangeError(Exception):
 
 
 class ClimateController:
+    class ClimateControllerAvailabilityState(Enum):
+        AVAILABLE = "available"
+        UNAVAILABLE = "unavailable"
 
     CLIMATE_CONTROL_VALUES_ON = [
         ClimatizationStatus.ClimatizationState.COOLING,
@@ -104,15 +108,26 @@ class ClimateController:
             "climatisationStatus"
         ].requests
 
+        self.__availability_status = (
+            ClimateController.ClimateControllerAvailabilityState.AVAILABLE
+        )
+
         self.__request = None
-        self.__operation_running = False
         self.__timeout_timer = None
 
         self.__check_vehicle_compatibility()
 
+    @property
+    def availability_status(self) -> ClimateControllerAvailabilityState:
+        return self.__availability_status
+
+    @property
+    def state(self):
+        return self.__climate_state
+
     def switch(self) -> None:
         LOG.info("Requested to switch climate controller state")
-        self.__weconnect_updater.update_weconnect(update_domains=[Domain.CLIMATISATION])
+        self.__weconnect_updater.update(domains=[Domain.CLIMATISATION], silent=False)
         if self.__climate_state.value in self.CLIMATE_CONTROL_VALUES_OFF:
             self.start()
         else:
@@ -139,7 +154,7 @@ class ClimateController:
 
         if temperature < 15.5 or 30 < temperature:
             raise TemperatureOutOfRangeError(
-                f"Requested temperature of {temperature} is out of accepted range. Target temperature must be between 15.5 and 30"
+                f"Requested temperature of {temperature} is out of accepted range. Target temperature must be between 15.5 and 30 degrees"
             )
 
         try:
@@ -188,6 +203,17 @@ class ClimateController:
             )
             raise e
 
+        except WeConnectUpdaterError as e:
+            LOG.exception(e)
+            self.__lcd_controller.display_message(
+                message="Virhe WeConnectia Päivitettäessä", time_on_screen=5
+            )
+            self.__lcd_controller.display_message(
+                message=f"Ilmastointi Saattaa Silti {'Käynnistyä' if operation == ControlOperation.START else 'Sammua'}",
+                time_on_screen=5,
+            )
+            raise e
+
         except Exception as e:
             LOG.exception(e)
             self.__lcd_controller.display_message(
@@ -200,11 +226,11 @@ class ClimateController:
             raise e
 
     def __get_climate_control_state(self) -> ClimatizationStatus.ClimatizationState:
-        self.__weconnect_updater.update_weconnect(update_domains=[Domain.CLIMATISATION])
+        self.__weconnect_updater.update(domains=[Domain.CLIMATISATION], silent=False)
         return self.__climate_state.value
 
     def __get_current_requests(self) -> list:
-        self.__weconnect_updater.update_weconnect(update_domains=[Domain.CLIMATISATION])
+        self.__weconnect_updater.update(domains=[Domain.CLIMATISATION], silent=False)
         return list(self.__climate_requests.values())
 
     def __identify_request(
@@ -233,11 +259,14 @@ class ClimateController:
         acceptable_state = state not in self.DISALLOWED_CLIMATE_STATES[operation]
         if not acceptable_state:
             raise ClimateControllerAlreadyInRequestedStateError(
-                f"Climate control is already in requested state of {state}"
+                f"Climate controller is already in requested state of {state}"
             )
 
     def __post_request(self, operation: ControlOperation):
-        if self.__operation_running:
+        if (
+            self.__availability_status
+            == ClimateController.ClimateControllerAvailabilityState.UNAVAILABLE
+        ):
             raise OperationAlreadyRunningError(
                 "Other climate controller operation is already running"
             )
@@ -247,7 +276,9 @@ class ClimateController:
 
         requests_before = self.__get_current_requests()
 
-        self.__operation_running = True
+        self.__availability_status = (
+            ClimateController.ClimateControllerAvailabilityState.UNAVAILABLE
+        )
         self.__climate_controls.value = operation
 
         for tries in range(5):
@@ -272,8 +303,8 @@ class ClimateController:
         else:
             self.__operation_led.blink(frequency=2)
 
-        self.__weconnect_updater.add_new_scheduler(
-            id="CLIMATE", update_values=[Domain.CLIMATISATION], interval=15
+        self.__weconnect_updater.add_scheduler(
+            id="CLIMATE", domains=[Domain.CLIMATISATION], interval=15, silent=False
         )
         self.__timeout_timer = Timer(
             function=self.__finish_operation,
@@ -304,5 +335,7 @@ class ClimateController:
             Timer(interval=3, function=self.__operation_led.turn_off).start()
 
         self.__weconnect_updater.remove_scheduler(id="CLIMATE")
-        self.__operation_running = False
+        self.__availability_status = (
+            ClimateController.ClimateControllerAvailabilityState.AVAILABLE
+        )
         self.__weconnect_vehicle_loader.enable_vehicle_change()
