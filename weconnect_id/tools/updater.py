@@ -48,6 +48,7 @@ class WeConnectUpdater:
             )
         except ConflictingIdError as e:
             raise e
+        self.update(domains=domains, silent=silent)
 
     def remove_scheduler(self, id: str) -> None:
         try:
@@ -56,7 +57,6 @@ class WeConnectUpdater:
             raise e
 
     def update(self, domains: list, silent: bool = False) -> None:
-
         if not silent:
             self.__update_led.blink()
 
