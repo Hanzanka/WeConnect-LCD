@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from threading import Timer
 from weconnect.elements.control_operation import ControlOperation
 from weconnect.elements.climatization_status import ClimatizationStatus
@@ -7,9 +9,13 @@ from display.lcd_controller import LCDController
 from weconnect_id.tools.updater import WeConnectUpdater, WeConnectUpdaterError
 from weconnect.domain import Domain
 from led.led_driver import create_led_driver
-from time import sleep
 from weconnect.addressable import AddressableLeaf
 from enum import Enum
+from threading import Lock
+
+if TYPE_CHECKING:
+    from weconnect_id.tools.vehicle_loader import WeConnectVehicleLoader
+    from weconnect_id.vehicle import WeConnectVehicle
 
 
 LOG = logging.getLogger("climate")
@@ -52,7 +58,7 @@ class TemperatureOutOfRangeError(Exception):
 
 
 class ClimateController:
-    class ClimateControllerAvailabilityState(Enum):
+    class AvailabilityState(Enum):
         AVAILABLE = "available"
         UNAVAILABLE = "unavailable"
 
@@ -70,6 +76,11 @@ class ClimateController:
         ControlOperation.STOP: CLIMATE_CONTROL_VALUES_OFF,
     }
 
+    ONGOING_REQUESTS = [
+        GenericStatus.Request.Status.QUEUED,
+        GenericStatus.Request.Status.IN_PROGRESS,
+        GenericStatus.Request.Status.DELAYED,
+    ]
     SUCCESSFULL_REQUEST = GenericStatus.Request.Status.SUCCESSFULL
     FAILED_REQUESTS = [
         GenericStatus.Request.Status.FAIL_VEHICLE_IS_OFFLINE,
@@ -80,14 +91,15 @@ class ClimateController:
         GenericStatus.Request.Status.FAIL,
         GenericStatus.Request.Status.UNKNOWN,
         GenericStatus.Request.Status.POLLING_TIMEOUT,
+        GenericStatus.Request.Status.TIMEOUT,
     ]
 
     def __init__(
         self,
-        weconnect_vehicle,
+        weconnect_vehicle: WeConnectVehicle,
         weconnect_updater: WeConnectUpdater,
         lcd_controller: LCDController,
-        weconnect_vehicle_loader,
+        weconnect_vehicle_loader: WeConnectVehicleLoader,
     ) -> None:
         self.__vehicle = weconnect_vehicle.api_vehicle
         self.__weconnect_updater = weconnect_updater
@@ -108,17 +120,24 @@ class ClimateController:
             "climatisationStatus"
         ].requests
 
-        self.__availability_status = (
-            ClimateController.ClimateControllerAvailabilityState.AVAILABLE
-        )
+        self.__availability_status = ClimateController.AvailabilityState.AVAILABLE
 
         self.__request = None
+        self.__excepted_request_operation_value = None
+
+        self.__request_tracking_lock = Lock()
+
         self.__timeout_timer = None
 
-        self.__check_vehicle_compatibility()
+        if not (
+            self.__climate_controls is not None and self.__climate_controls.enabled
+        ):
+            raise ClimateControllerCompatibilityError(
+                "Car is not compatible with climate controller actions"
+            )
 
     @property
-    def availability_status(self) -> ClimateControllerAvailabilityState:
+    def availability_status(self) -> AvailabilityState:
         return self.__availability_status
 
     @property
@@ -138,14 +157,14 @@ class ClimateController:
         self.__lcd_controller.display_message(
             message="Käynnistetään Ilmastointia", time_on_screen=3
         )
-        self.__start_operation(ControlOperation.START)
+        self.__post_request(ControlOperation.START)
 
     def stop(self) -> None:
         LOG.info("Requested to stop climate controller")
         self.__lcd_controller.display_message(
             message="Pysäytetään Ilmastointia", time_on_screen=3
         )
-        self.__start_operation(ControlOperation.STOP)
+        self.__post_request(ControlOperation.STOP)
 
     def set_temperature(self, temperature: float) -> None:
         LOG.info(
@@ -165,146 +184,109 @@ class ClimateController:
             self.__climate_settings.targetTemperature_C.value = temperature
 
         except Exception as e:
-            LOG.exception(
-                "Failed to update climate controller target temperature value", e
-            )
+            LOG.exception(e)
             self.__lcd_controller.display_message(
                 "Virhe Lämpötilaa Päivittäessä", time_on_screen=5
             )
             raise FailedToSetTemperatureError(e)
 
-    def __start_operation(self, operation: ControlOperation) -> None:
-        try:
-            self.__post_request(operation=operation)
+    def __exception_handler(function: callable) -> callable:
+        def decorator(self, *args, **kwargs):
+            error = None
+            operation = args[0]
 
-        except OperationAlreadyRunningError as e:
-            LOG.exception(e)
-            self.__lcd_controller.display_message(
-                message="Toinen Pyyntö On Vireillä", time_on_screen=5
-            )
-            raise e
+            try:
+                function(self, *args, **kwargs)
 
-        except ClimateControllerAlreadyInRequestedStateError as e:
-            LOG.exception(e)
-            self.__lcd_controller.display_message(
-                message="Ilmastointi On Jo Pyydetyssä Tilassa",
-                time_on_screen=5,
-            )
-            raise e
+            except OperationAlreadyRunningError as e:
+                LOG.exception(e)
+                self.__lcd_controller.display_message(
+                    message="Toinen Pyyntö On Vireillä", time_on_screen=5
+                )
+                error = e
 
-        except FailedToIdentifyRequestError as e:
-            LOG.exception(e)
-            self.__lcd_controller.display_message(
-                message="Pyyntöä Ei Voida Seurata", time_on_screen=5
-            )
-            self.__lcd_controller.display_message(
-                message=f"Ilmastointi Saattaa Silti {'Käynnistyä' if operation == ControlOperation.START else 'Sammua'}",
-                time_on_screen=5,
-            )
-            raise e
+            except ClimateControllerAlreadyInRequestedStateError as e:
+                LOG.exception(e)
+                self.__lcd_controller.display_message(
+                    message="Ilmastointi On Jo Pyydetyssä Tilassa",
+                    time_on_screen=5,
+                )
+                error = e
 
-        except WeConnectUpdaterError as e:
-            LOG.exception(e)
-            self.__lcd_controller.display_message(
-                message="Virhe WeConnectia Päivitettäessä", time_on_screen=5
-            )
-            self.__lcd_controller.display_message(
-                message=f"Ilmastointi Saattaa Silti {'Käynnistyä' if operation == ControlOperation.START else 'Sammua'}",
-                time_on_screen=5,
-            )
-            raise e
+            except FailedToIdentifyRequestError as e:
+                LOG.exception(e)
+                self.__lcd_controller.display_message(
+                    message="Pyyntöä Ei Voida Seurata", time_on_screen=5
+                )
+                self.__lcd_controller.display_message(
+                    message=f"Ilmastointi Saattaa Silti {'Käynnistyä' if operation == ControlOperation.START else 'Sammua'}",
+                    time_on_screen=5,
+                )
+                error = e
 
-        except Exception as e:
-            LOG.exception(e)
-            self.__lcd_controller.display_message(
-                message="Ei-Tunnettu Virhe", time_on_screen=5
-            )
-            self.__lcd_controller.display_message(
-                message=f"Ilmastointi Saattaa Silti {'Käynnistyä' if operation == ControlOperation.START else 'Sammua'}",
-                time_on_screen=5,
-            )
-            raise e
+            except WeConnectUpdaterError as e:
+                LOG.exception(e)
+                self.__lcd_controller.display_message(
+                    message="Virhe WeConnectia Päivitettäessä", time_on_screen=5
+                )
+                self.__lcd_controller.display_message(
+                    message=f"Ilmastointi Saattaa Silti {'Käynnistyä' if operation == ControlOperation.START else 'Sammua'}",
+                    time_on_screen=5,
+                )
+                error = e
 
-    def __get_climate_control_state(self) -> ClimatizationStatus.ClimatizationState:
-        self.__weconnect_updater.update(domains=[Domain.CLIMATISATION], silent=False)
-        return self.__climate_state.value
+            except Exception as e:
+                LOG.exception(e)
+                self.__lcd_controller.display_message(
+                    message="Ei-Tunnettu Virhe", time_on_screen=5
+                )
+                self.__lcd_controller.display_message(
+                    message=f"Ilmastointi Saattaa Silti {'Käynnistyä' if operation == ControlOperation.START else 'Sammua'}",
+                    time_on_screen=5,
+                )
+                error = e
 
-    def __get_current_requests(self) -> list:
-        self.__weconnect_updater.update(domains=[Domain.CLIMATISATION], silent=False)
-        return list(self.__climate_requests.values())
+            finally:
+                if error is not None:
+                    self.__availability_status = (
+                        ClimateController.AvailabilityState.AVAILABLE
+                    )
+                    raise error
 
-    def __identify_request(
-        self, requests_before, requests_after
-    ) -> GenericStatus.Request:
-        new_requests = [
-            request for request in requests_after if request not in requests_before
-        ]
-        if len(new_requests) != 1:
-            raise FailedToIdentifyRequestError(
-                f"Failed to identify ID of the request, the list containing newly added request IDs is {'too long' if len(new_requests) > 1 else 'empty'}"
-            )
-        return new_requests[0]
+        return decorator
 
-    def __check_vehicle_compatibility(self):
-        compatible = (
-            self.__climate_controls is not None and self.__climate_controls.enabled
-        )
-        if not compatible:
-            raise ClimateControllerCompatibilityError(
-                "Car is not compatible with climate controller actions"
-            )
-
-    def __check_climate_control_state(self, operation: ControlOperation):
-        state = self.__get_climate_control_state()
-        acceptable_state = state not in self.DISALLOWED_CLIMATE_STATES[operation]
-        if not acceptable_state:
-            raise ClimateControllerAlreadyInRequestedStateError(
-                f"Climate controller is already in requested state of {state}"
-            )
-
+    @__exception_handler
     def __post_request(self, operation: ControlOperation):
         if (
             self.__availability_status
-            == ClimateController.ClimateControllerAvailabilityState.UNAVAILABLE
+            == ClimateController.AvailabilityState.UNAVAILABLE
         ):
-            raise OperationAlreadyRunningError(
-                "Other climate controller operation is already running"
-            )
-        self.__check_climate_control_state(operation)
+            raise OperationAlreadyRunningError("Climate controller is unavailable")
 
+        self.__weconnect_updater.update(domains=[Domain.CLIMATISATION], silent=False)
+
+        if not (self.__climate_state not in self.DISALLOWED_CLIMATE_STATES[operation]):
+            raise ClimateControllerAlreadyInRequestedStateError(
+                f"Climate controller is already in requested state of {self.__climate_state}"
+            )
+
+        self.__availability_status = ClimateController.AvailabilityState.UNAVAILABLE
         self.__weconnect_vehicle_loader.disable_vehicle_change()
 
-        requests_before = self.__get_current_requests()
-
-        self.__availability_status = (
-            ClimateController.ClimateControllerAvailabilityState.UNAVAILABLE
+        self.__climate_requests.addObserver(
+            observer=self.__on_requests_update,
+            flag=AddressableLeaf.ObserverEvent.ALL,
+            priority=AddressableLeaf.ObserverPriority.INTERNAL_FIRST,
         )
+
+        self.__excepted_request_operation_value = operation
         self.__climate_controls.value = operation
 
-        for tries in range(5):
-            requests_after = self.__get_current_requests()
-            try:
-                self.__request = self.__identify_request(
-                    requests_before, requests_after
-                )
-                self.__request.status.addObserver(
-                    observer=self.__on_request_update,
-                    flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
-                    priority=AddressableLeaf.ObserverPriority.INTERNAL_FIRST,
-                )
-                break
-            except FailedToIdentifyRequestError as e:
-                if tries == 4:
-                    raise e
-            sleep(5)
-
-        if operation == ControlOperation.START:
-            self.__operation_led.turn_on()
-        else:
-            self.__operation_led.blink(frequency=2)
-
         self.__weconnect_updater.add_scheduler(
-            id="CLIMATE", domains=[Domain.CLIMATISATION], interval=15, silent=False
+            id="REQUEST FINDER",
+            domains=[Domain.CLIMATISATION],
+            interval=10,
+            silent=False,
         )
         self.__timeout_timer = Timer(
             function=self.__finish_operation,
@@ -313,7 +295,40 @@ class ClimateController:
         )
         self.__timeout_timer.start()
 
+    def __track_request(self, request: GenericStatus.Request) -> None:
+        if not self.__request_tracking_lock.acquire(blocking=False):
+            return
+
+        LOG.debug(f"Starting tracking of request (ID: {request.requestId})")
+        self.__request = request
+
+        self.__weconnect_updater.remove_scheduler(id="REQUEST FINDER")
+        self.__climate_requests.removeObserver(
+            observer=self.__on_requests_update,
+            flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
+        )
+
+        if self.__request.operation.value == ControlOperation.START:
+            self.__operation_led.turn_on()
+        else:
+            self.__operation_led.blink(frequency=2)
+
+        self.__request.status.addObserver(
+            observer=self.__on_request_update,
+            flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
+            priority=AddressableLeaf.ObserverPriority.USER_HIGH,
+        )
+        self.__weconnect_updater.add_scheduler(
+            id="CLIMATE", domains=[Domain.CLIMATISATION], interval=15, silent=False
+        )
+        LOG.debug(
+            f"Successfully started tracking of request (ID: {self.__request.requestId})"
+        )
+
     def __on_request_update(self, element, flags) -> None:
+        LOG.debug(
+            f"Request (ID: {self.__request.requestId}) state was updated to {self.__request.status.value}"
+        )
         if self.__request.status.value == self.SUCCESSFULL_REQUEST:
             self.__finish_operation(successfull=True)
 
@@ -321,21 +336,47 @@ class ClimateController:
             self.__finish_operation(successfull=False)
 
     def __finish_operation(self, successfull: bool) -> None:
+        LOG.debug(
+            f"Finishing climate operation, operation was {'successfull' if successfull else 'not successfull'}"
+        )
         self.__timeout_timer.cancel()
+
         self.__request.status.removeObserver(
             observer=self.__on_request_update,
             flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
         )
+        self.__weconnect_updater.remove_scheduler(id="CLIMATE")
+        if self.__request is None:
+            self.__climate_requests.removeObserver(
+                observer=self.__on_requests_update,
+                flag=AddressableLeaf.ObserverEvent.ALL,
+            )
+
+        self.__request = None
+        self.__excepted_request_operation_value = None
+
+        self.__request_tracking_lock.release()
 
         if successfull:
             self.__operation_led.turn_off()
         else:
-            self.__lcd_controller.display_message("Ilmastointi-Pyyntö Epäonnistui")
+            self.__lcd_controller.display_message(
+                "Ilmastointi-Pyyntö Epäonnistui", time_on_screen=5
+            )
             self.__operation_led.blink(frequency=10)
             Timer(interval=3, function=self.__operation_led.turn_off).start()
 
-        self.__weconnect_updater.remove_scheduler(id="CLIMATE")
-        self.__availability_status = (
-            ClimateController.ClimateControllerAvailabilityState.AVAILABLE
-        )
+        self.__availability_status = ClimateController.AvailabilityState.AVAILABLE
         self.__weconnect_vehicle_loader.enable_vehicle_change()
+        LOG.debug(
+            f"Climate operation finished, operation was {'successfull' if successfull else 'not successfull'}"
+        )
+
+    def __on_requests_update(self, element, flags) -> None:
+        for request in self.__climate_requests.values():
+            if request.status.value not in self.ONGOING_REQUESTS:
+                continue
+
+            if request.operation.value == self.__excepted_request_operation_value:
+                self.__track_request(request=request)
+                break
