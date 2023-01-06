@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import logging
 from weconnect.elements.vehicle import Vehicle
 from display.lcd_controller import LCDController
@@ -6,9 +8,12 @@ from weconnect_id.data_providers.battery_data import WeConnectBatteryData
 from weconnect_id.data_providers.climatisation_data import WeConnectClimateData
 from weconnect_id.data_providers.readiness_data import WeConnectReadinessData
 from weconnect_id.data_providers.vehicle_data_property import (
-    WeConnectVehicleDataProperty
+    WeConnectVehicleDataProperty,
 )
 from weconnect_id.tools.updater import WeConnectUpdater
+
+if TYPE_CHECKING:
+    from weconnect_id.tools.vehicle_loader import WeConnectVehicleLoader
 
 
 LOG = logging.getLogger("vehicle")
@@ -19,9 +24,8 @@ class WeConnectVehicle:
     CAR_BRANDS = {"WCAR": "Volkswagen"}
 
     def __init__(self, vehicle: Vehicle, config: dict) -> None:
-        LOG.debug(f"Initializing vehicle (VIN: {vehicle.vin})")
         self.__import_vehicle_properties(vehicle=vehicle)
-        self.__enable_trackers()
+        self.__api_vehicle.enableTracker()
 
         self.__battery_data_provider = WeConnectBatteryData(vehicle=vehicle)
         self.__climatisation_data_provider = WeConnectClimateData(vehicle=vehicle)
@@ -38,7 +42,7 @@ class WeConnectVehicle:
         self,
         weconnect_updater: WeConnectUpdater,
         lcd_controller: LCDController,
-        weconnect_vehicle_loader,
+        weconnect_vehicle_loader: WeConnectVehicleLoader,
     ) -> None:
         self.__climate_controller = ClimateController(
             weconnect_vehicle=self,
@@ -48,33 +52,23 @@ class WeConnectVehicle:
         )
 
     def __import_vehicle_properties(self, vehicle: Vehicle) -> None:
-        LOG.debug("Importing vehicle properties")
         self.__api_vehicle = vehicle
         self.__brand = self.CAR_BRANDS[vehicle.devicePlatform.value.value]
         self.__model = vehicle.model
         self.__vin = vehicle.vin
         self.__brand_code = vehicle.brandCode
 
-    def __enable_trackers(self) -> None:
-        LOG.debug("Enabling request tracker for climate controller")
-        self.__api_vehicle.enableTracker()
-
     def __import_vehicle_data(self) -> None:
-        LOG.debug("Importing vehicle data")
         self.__data = {}
         self.__data.update(self.__battery_data_provider.get_data())
         self.__data.update(self.__climatisation_data_provider.get_data())
         self.__data.update(self.__readiness_data_provider.get_data())
 
     def __add_data_property_translations(self, config: dict) -> None:
-        LOG.debug("Adding translations for WeconnectVehicleDataProperties")
         for data_id, translations in config["translations"].items():
             self.__data[data_id].add_translations(translations=translations)
 
     def __setup_data_property_loggers(self, config: dict) -> None:
-        LOG.debug(
-            "Setting up loggers for WeconnectVehicleDataProperties that log their data"
-        )
         for data_id in config["log data"]:
             self.__data[data_id].enable_logging((config["paths"]["data_logs"]))
 
@@ -118,12 +112,6 @@ class WeConnectVehicle:
 
     def get_data_property(self, data_property_id: str) -> WeConnectVehicleDataProperty:
         return self.__data[data_property_id]
-
-    def add_callback_function(self, data_property_id: str, function: callable) -> None:
-        LOG.info(
-            f"Adding callback function {function.__name__} to WeconnectVehicleDataProperty (ID: {data_property_id})"
-        )
-        self.__data[data_property_id].add_callback_function(function)
 
     @property
     def api_vehicle(self) -> Vehicle:

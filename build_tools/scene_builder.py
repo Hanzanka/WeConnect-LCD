@@ -1,4 +1,3 @@
-import logging
 from display.lcd_scene import LCDScene
 from display.lcd_item import LCDItem
 from display.lcd_scene_controller import LCDSceneController
@@ -11,9 +10,6 @@ from display.custom_scenes.climate_controller_temperature_scene import (
 from weconnect_id.tools.updater import WeConnectUpdater
 from weconnect.domain import Domain
 from electricity_price.spot_price_provider import SpotPriceProvider
-
-
-LOG = logging.getLogger("build_tools")
 
 
 class SceneBuilder:
@@ -53,7 +49,7 @@ class SceneBuilder:
             "update weconnect": LCDItem(
                 title="Päivitä nyt",
                 id="item_weconnect_update_now",
-                target=self.__weconnect_updater.update_weconnect,
+                target=self.__weconnect_updater.update,
                 target_args=[[Domain.CHARGING, Domain.CLIMATISATION, Domain.READINESS]],
             ),
             "spot price now": self.__spot_price_provider.price_now_item,

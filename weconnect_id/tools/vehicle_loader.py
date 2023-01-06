@@ -1,3 +1,4 @@
+from __future__ import annotations
 from weconnect_id.vehicle import WeConnectVehicle
 from weconnect_id.tools.updater import WeConnectUpdater
 from button.push_button import PushButton
@@ -6,6 +7,9 @@ from led.led_driver import load_automated_leds
 import logging
 from display.weconnect_lcd_message import configure_auto_messages
 from build_tools.scene_builder import SceneBuilder
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from display.lcd_scene_controller import LCDSceneController
 
 
 LOG = logging.getLogger("vehicle")
@@ -14,7 +18,7 @@ LOG = logging.getLogger("vehicle")
 class WeConnectVehicleLoader:
     def __init__(
         self,
-        lcd_scene_controller,
+        lcd_scene_controller: LCDSceneController,
         weconnect_updater: WeConnectUpdater,
         config: dict,
         scene_builder: SceneBuilder,
@@ -68,7 +72,7 @@ class WeConnectVehicleLoader:
 
         self.__lcd_scene_controller.set_home_scene(scene=scenes["scene_menu"])
         self.__lcd_scene_controller.load_scene(scene=scenes["scene_menu"])
-
+    
     @property
     def vehicle_change_allowed(self) -> bool:
         return self.__vehicle_change_allowed
