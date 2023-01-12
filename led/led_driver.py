@@ -1,15 +1,15 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from enum import Enum
 import RPi.GPIO as GPIO
-from threading import Timer, Event
-import logging
+from threading import Timer, Lock
 import operator
 
+if TYPE_CHECKING:
+    from weconnect_id.vehicle import WeConnectVehicle
 
-LOG = logging.getLogger("led")
 
-
-def load_automated_leds(config: dict, weconnect_vehicle) -> None:
-    LOG.debug("Loading automated LEDDrivers")
+def load_automated_leds(config: dict, weconnect_vehicle: WeConnectVehicle) -> None:
     led_configs = config["automated leds"]
     for led_config in led_configs:
         LEDDriver(
@@ -21,14 +21,11 @@ def load_automated_leds(config: dict, weconnect_vehicle) -> None:
         )
 
 
-class LEDDriverError(Exception):
-    pass
-
-
 class LEDTrigger:
-    def __init__(self, led_driver, trigger, weconnect_vehicle) -> None:
-        LOG.debug(f"Initializing LEDTrigger for LEDDriver (ID: {led_driver.id})")
-        self.driver = led_driver
+    def __init__(
+        self, led_driver: LEDDriver, trigger, weconnect_vehicle: WeConnectVehicle
+    ) -> None:
+        self.__driver = led_driver
 
         try:
             self.__default_mode = trigger["default mode"]
@@ -44,17 +41,23 @@ class LEDTrigger:
                     ">": operator.gt,
                     "!=": operator.ne,
                 }[trigger["operator"]]
+
             else:
                 self.__trigger_values = trigger["trigger values"]
-            self.__data_provider = weconnect_vehicle.get_data_property(trigger["data id"])
-            self.__data_provider.add_callback_function(self.on_data_update)
+            self.__data_provider = weconnect_vehicle.get_data_property(
+                trigger["data id"]
+            )
+            self.__data_provider.add_callback_function(
+                id="LED", function=self.__on_data_update
+            )
+
         except Exception as e:
-            raise LEDDriverError(e, True)
+            raise e
 
-    def on_data_update(self) -> None:
-        self.driver.on_trigger_update(self.get_trigger_value())
+    def __on_data_update(self) -> None:
+        self.__driver.on_trigger_update(self.__get_trigger_value())
 
-    def get_trigger_value(self):
+    def __get_trigger_value(self):
         if self.__compare:
             if self.__compare_operator(
                 self.__trigger_value, self.__data_provider.value
@@ -82,12 +85,15 @@ class LEDDriver:
         BLINKING = "blinking"
 
     def __init__(
-        self, pin, id, default_blinker_frequency, trigger=None, weconnect_vehicle=None
+        self,
+        pin,
+        id,
+        default_blinker_frequency,
+        trigger=None,
+        weconnect_vehicle: WeConnectVehicle = None,
     ) -> None:
-        LOG.debug(f"Creating new LEDDriver (ID: {id}) (PIN: {pin})")
 
         self.__id = id
-
         self.__pin = pin
         GPIO.setup(self.__pin, GPIO.OUT)
         GPIO.output(self.__pin, GPIO.LOW)
@@ -95,11 +101,8 @@ class LEDDriver:
 
         self.__default_blinker_frequency = default_blinker_frequency
         self.__blinker_frequency = default_blinker_frequency
-        self.__blinker_event = Event()
-        self.__blinker_event.set()
 
-        self.__operation_event = Event()
-        self.__operation_event.set()
+        self.__operation_lock = Lock()
 
         if trigger is not None and weconnect_vehicle is not None:
             self.__trigger_functions = {
@@ -119,42 +122,47 @@ class LEDDriver:
         return self.__state
 
     def on_trigger_update(self, trigger_command) -> None:
-        LOG.debug(f"LEDDriver (ID: {self.__id}) got update from LEDTrigger")
         if trigger_command is not None:
-            try:
-                if isinstance(trigger_command, tuple):
-                    self.__trigger_functions[trigger_command[0]](trigger_command[1])
-                else:
-                    self.__trigger_functions[trigger_command]()
-            except LEDDriverError as e:
-                LOG.exception(e)
+            if isinstance(trigger_command, tuple):
+                self.__trigger_functions[trigger_command[0]](trigger_command[1])
+            else:
+                self.__trigger_functions[trigger_command]()
 
     def __load_led_mode(self) -> None:
-        self.__trigger.on_data_update()
+        self.__trigger.__on_data_update()
 
     def __start_operation(self) -> None:
-        self.__operation_event.wait()
-        self.__operation_event.clear()
+        self.__operation_lock.acquire()
 
     def __finish_operation(self) -> None:
-        self.__operation_event.set()
+        self.__operation_lock.release()
 
-    def __turn_LED_off(self, looping=True) -> None:
-        if self.__state != LEDDriver.LEDState.ON:
-            GPIO.output(self.__pin, GPIO.LOW)
-        if looping and not self.__blinker_event.is_set():
-            Timer(1 / self.__blinker_frequency / 2, self.__turn_LED_on).start()
+    def __turn_LED_off(self) -> None:
+        GPIO.output(self.__pin, GPIO.LOW)
+        if self.__state == LEDDriver.LEDState.BLINKING:
+            timer = Timer(
+                interval=1 / self.__blinker_frequency / 2, function=self.__turn_LED_on
+            )
+            timer.daemon = True
+            timer.start()
+            return
+        if self.__state == LEDDriver.LEDState.ON:
+            self.__turn_LED_on()
 
-    def __turn_LED_on(self, looping=True) -> None:
-        if self.__state != LEDDriver.LEDState.OFF:
-            GPIO.output(self.__pin, GPIO.HIGH)
-        if looping and not self.__blinker_event.is_set():
-            Timer(1 / self.__blinker_frequency / 2, self.__turn_LED_off).start()
+    def __turn_LED_on(self) -> None:
+        GPIO.output(self.__pin, GPIO.HIGH)
+        if self.__state == LEDDriver.LEDState.BLINKING:
+            timer = Timer(
+                interval=1 / self.__blinker_frequency / 2, function=self.__turn_LED_off
+            )
+            timer.daemon = True
+            timer.start()
+            return
+        if self.__state == LEDDriver.LEDState.OFF:
+            self.__turn_LED_off()
 
     def blink(self, frequency=None) -> None:
-        LOG.info(f"Starting blinker on LEDDriver (ID: {self.__id})")
         if self.__state == LEDDriver.LEDState.BLINKING:
-            LOG.debug(f"Blinker on LEDDriver (ID: {self.__id}) is already on")
             return
 
         self.__start_operation()
@@ -162,64 +170,41 @@ class LEDDriver:
         self.__blinker_frequency = (
             self.__default_blinker_frequency if frequency is None else frequency
         )
-        self.__blinker_event.clear()
         self.__turn_LED_on()
         self.__finish_operation()
 
     def stop_blinking(self) -> None:
-        LOG.info(f"Shutting down blinker on LEDDriver (ID: {self.__id})")
-        if self.__blinker_event.is_set():
-            LOG.debug(f"Blinker on LEDDriver (ID: {self.__id}) is already off")
+        if self.__state != LEDDriver.LEDState.BLINKING:
             return
-
         self.__start_operation()
         self.__state = LEDDriver.LEDState.OFF
-        self.__blinker_event.set()
-        self.__turn_LED_off()
-        self.__finish_operation()
+        self.__finish_operation
 
     def turn_on(self) -> None:
-        LOG.info(f"Turning on LEDDriver (ID: {self.__id})")
         if self.__state == LEDDriver.LEDState.ON:
-            LOG.debug(f"LEDDriver (ID: {self.__id}) is already on")
             return
-
         self.__start_operation()
-        if self.__state == LEDDriver.LEDState.BLINKING:
-            LOG.debug(
-                f"Blinker on LEDDriver (ID: {self.__id}) is enabled. Shutting it down"
-            )
-            self.__blinker_event.set()
+        state_before = self.__state
         self.__state = LEDDriver.LEDState.ON
-        self.__turn_LED_on(looping=False)
+        if state_before == LEDDriver.LEDState.OFF:
+            self.__turn_LED_on()
         self.__finish_operation()
 
     def turn_off(self) -> None:
-        LOG.info(f"Turning off LEDDriver (ID: {self.__id})")
         if self.__state == LEDDriver.LEDState.OFF:
-            LOG.debug(f"LEDDriver (ID: {self.__id}) is already off")
             return
-
         self.__start_operation()
-        if self.__state == LEDDriver.LEDState.BLINKING:
-            LOG.debug(
-                f"Blinker on LEDDriver (ID: {self.__id}) is enabled, shutting it down"
-            )
-            self.__blinker_event.set()
+        state_before = self.__state
         self.__state = LEDDriver.LEDState.OFF
-        self.__turn_LED_off(looping=False)
+        if state_before == LEDDriver.LEDState.ON:
+            self.__turn_LED_off()
         self.__finish_operation()
 
     def set_frequency(self, frequency) -> None:
-        LOG.info(
-            f"Setting default frequency of LEDDRiver (ID: {self.__id}) to {frequency}Hz"
-        )
         if frequency <= 0:
-            LOG.error("Frequency must be greater than zero")
             raise ValueError("Frequency must be greater than zero")
         self.__blinker_frequency = frequency
 
 
 def create_led_driver(pin: int, id, default_frequency) -> LEDDriver:
-    LOG.info(f"Creating new LEDDriver (ID: {id})")
     return LEDDriver(pin=pin, id=id, default_blinker_frequency=default_frequency)
