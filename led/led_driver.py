@@ -131,12 +131,6 @@ class LEDDriver:
     def __load_led_mode(self) -> None:
         self.__trigger.__on_data_update()
 
-    def __start_operation(self) -> None:
-        self.__operation_lock.acquire()
-
-    def __finish_operation(self) -> None:
-        self.__operation_lock.release()
-
     def __turn_LED_off(self) -> None:
         GPIO.output(self.__pin, GPIO.LOW)
         if self.__state == LEDDriver.LEDState.BLINKING:
@@ -162,43 +156,42 @@ class LEDDriver:
             self.__turn_LED_off()
 
     def blink(self, frequency=None) -> None:
-        if self.__state == LEDDriver.LEDState.BLINKING:
+        if (
+            self.__state == LEDDriver.LEDState.BLINKING
+            and frequency == self.__blinker_frequency
+        ):
             return
 
-        self.__start_operation()
-        self.__state = LEDDriver.LEDState.BLINKING
-        self.__blinker_frequency = (
-            self.__default_blinker_frequency if frequency is None else frequency
-        )
-        self.__turn_LED_on()
-        self.__finish_operation()
+        with self.__operation_lock:
+            self.__state = LEDDriver.LEDState.BLINKING
+            self.__blinker_frequency = (
+                self.__default_blinker_frequency if frequency is None else frequency
+            )
+            self.__turn_LED_on()
 
     def stop_blinking(self) -> None:
         if self.__state != LEDDriver.LEDState.BLINKING:
             return
-        self.__start_operation()
-        self.__state = LEDDriver.LEDState.OFF
-        self.__finish_operation
+        with self.__operation_lock:
+            self.__state = LEDDriver.LEDState.OFF
 
     def turn_on(self) -> None:
         if self.__state == LEDDriver.LEDState.ON:
             return
-        self.__start_operation()
-        state_before = self.__state
-        self.__state = LEDDriver.LEDState.ON
-        if state_before == LEDDriver.LEDState.OFF:
-            self.__turn_LED_on()
-        self.__finish_operation()
+        with self.__operation_lock:
+            state_before = self.__state
+            self.__state = LEDDriver.LEDState.ON
+            if state_before == LEDDriver.LEDState.OFF:
+                self.__turn_LED_on()
 
     def turn_off(self) -> None:
         if self.__state == LEDDriver.LEDState.OFF:
             return
-        self.__start_operation()
-        state_before = self.__state
-        self.__state = LEDDriver.LEDState.OFF
-        if state_before == LEDDriver.LEDState.ON:
-            self.__turn_LED_off()
-        self.__finish_operation()
+        with self.__operation_lock:
+            state_before = self.__state
+            self.__state = LEDDriver.LEDState.OFF
+            if state_before == LEDDriver.LEDState.ON:
+                self.__turn_LED_off()
 
     def set_frequency(self, frequency) -> None:
         if frequency <= 0:
