@@ -45,13 +45,13 @@ class LCDController:
             return
 
         if not self.__message_on_screen:
-            self.__print_lock.acquire()
-            try:
-                self.__lcd.cursor_pos = (0, 0)
-                self.__lcd.write_string(self.__content_into_string(content))
-            except Exception as e:
-                LOG.exception(e)
-            self.__print_lock.release()
+            with self.__print_lock:
+                try:
+                    self.__lcd.cursor_pos = (0, 0)
+                    self.__lcd.write_string(self.__content_into_string(content))
+                    print(self.__content_into_string(content))
+                except Exception as e:
+                    LOG.exception(e)
 
     def backlight_on(self) -> None:
         if self.__darkmode_timer.is_alive():
@@ -102,26 +102,25 @@ class LCDController:
         if not self.__message_on_screen:
 
             self.backlight_on()
-            self.__print_lock.acquire()
-            if time_on_screen is not None:
-                self.__interactions_enabled = False
-                self.__message_on_screen = True
+            with self.__print_lock:
+                if time_on_screen is not None:
+                    self.__interactions_enabled = False
+                    self.__message_on_screen = True
 
-            splitted = textwrap.wrap(message, 19)
-            if len(splitted) == 1:
-                splitted.append(" " * 18)
-            for i in range(0, len(splitted)):
-                splitted[i] = splitted[i].center(18)
+                splitted = textwrap.wrap(message, 19)
+                if len(splitted) == 1:
+                    splitted.append(" " * 18)
+                for i in range(0, len(splitted)):
+                    splitted[i] = splitted[i].center(18)
 
-            self.__lcd.clear()
+                self.__lcd.clear()
 
-            try:
-                for i in range(0, 2):
-                    self.__lcd.cursor_pos = (1 + i, 1)
-                    self.__lcd.write_string(splitted[i])
-            except Exception as e:
-                LOG.exception(e)
-            self.__print_lock.release()
+                try:
+                    for i in range(0, 2):
+                        self.__lcd.cursor_pos = (1 + i, 1)
+                        self.__lcd.write_string(splitted[i])
+                except Exception as e:
+                    LOG.exception(e)
 
             if time_on_screen is not None:
                 self.__message_timer = Timer(
