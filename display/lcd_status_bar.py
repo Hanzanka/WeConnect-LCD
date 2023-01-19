@@ -1,10 +1,20 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from weconnect.elements.plug_status import PlugStatus
 from weconnect.elements.charging_status import ChargingStatus
 from weconnect.elements.climatization_status import ClimatizationStatus
 
+if TYPE_CHECKING:
+    from weconnect_id.vehicle import WeConnectVehicle
+    from display.lcd_scene_controller import LCDSceneController
+
 
 class LCDStatusBar:
-    def __init__(self, weconnect_vehicle, lcd_scene_controller) -> None:
+    def __init__(
+        self,
+        weconnect_vehicle: WeConnectVehicle,
+        lcd_scene_controller: LCDSceneController,
+    ) -> None:
         self.__weconnect_vehicle = weconnect_vehicle
         self.__lcd_scene_controller = lcd_scene_controller
 
@@ -29,19 +39,19 @@ class LCDStatusBar:
 
         self.__weconnect_vehicle.get_data_property(
             "battery level"
-        ).add_callback_function(self.__update_battery_icon)
+        ).add_callback_function(id="STATUS_BAR", function=self.__update_battery_icon)
         self.__weconnect_vehicle.get_data_property(
             "charge state"
-        ).add_callback_function(self.__update_charging_icon)
+        ).add_callback_function(id="STATUS_BAR", function=self.__update_charging_icon)
         self.__weconnect_vehicle.get_data_property(
             "target battery level"
-        ).add_callback_function(self.__update_charging_icon)
+        ).add_callback_function(id="STATUS_BAR", function=self.__update_charging_icon)
         self.__weconnect_vehicle.get_data_property(
             "charging plug connection status"
-        ).add_callback_function(self.__update_charging_icon)
+        ).add_callback_function(id="STATUS_BAR", function=self.__update_charging_icon)
         self.__weconnect_vehicle.get_data_property(
             "climate controller state"
-        ).add_callback_function(self.__update_climate_icon)
+        ).add_callback_function(id="STATUS_BAR", function=self.__update_climate_icon)
 
         self.__update_battery_icon()
         self.__update_charging_icon()
@@ -73,23 +83,25 @@ class LCDStatusBar:
         charging_status = self.__weconnect_vehicle.get_data_property(
             "charge state"
         ).value
+        
         if charging_status == ChargingStatus.ChargingState.CHARGING:
             self.__charging_icon = self.__charging
-            self.__lcd_scene_controller.update_status_bar()
-            return
-
-        target_soc_pct = self.__weconnect_vehicle.get_data_property(
-            "target battery level"
-        ).value
-        battery = self.__weconnect_vehicle.get_data_property("battery level").value
-        if battery == target_soc_pct:
-            self.__charging_icon = self.__charge_complete
             self.__lcd_scene_controller.update_status_bar()
             return
 
         plug_status = self.__weconnect_vehicle.get_data_property(
             "charging plug connection status"
         ).value
+        target_soc_pct = self.__weconnect_vehicle.get_data_property(
+            "target battery level"
+        ).value
+        battery = self.__weconnect_vehicle.get_data_property("battery level").value
+        
+        if battery >= target_soc_pct and plug_status == PlugStatus.PlugConnectionState.CONNECTED:
+            self.__charging_icon = self.__charge_complete
+            self.__lcd_scene_controller.update_status_bar()
+            return
+
         if plug_status == PlugStatus.PlugConnectionState.CONNECTED:
             self.__charging_icon = self.__plug_connected
             self.__lcd_scene_controller.update_status_bar()
