@@ -92,12 +92,12 @@ class LCDStatusBar:
         plug_status = self.__weconnect_vehicle.get_data_property(
             "charging plug connection status"
         ).value
-        target_soc_pct = self.__weconnect_vehicle.get_data_property(
+        target_battery_level = self.__weconnect_vehicle.get_data_property(
             "target battery level"
         ).value
-        battery = self.__weconnect_vehicle.get_data_property("battery level").value
+        battery_level = self.__weconnect_vehicle.get_data_property("battery level").value
         
-        if battery >= target_soc_pct and plug_status == PlugStatus.PlugConnectionState.CONNECTED:
+        if battery_level >= target_battery_level and plug_status == PlugStatus.PlugConnectionState.CONNECTED:
             self.__charging_icon = self.__charge_complete
             self.__lcd_scene_controller.update_status_bar()
             return
