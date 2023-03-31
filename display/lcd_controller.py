@@ -14,7 +14,7 @@ class LCDController:
             i2c_expander="PCF8574", address=0x27, port=1, charmap="A00", cols=20, rows=4
         )
 
-        self.__darkmode_timer = Timer(30, self.backlight_off)
+        self.__backlight_timer = Timer(30, self.backlight_off)
 
         self.__load_custom_characters()
 
@@ -30,8 +30,6 @@ class LCDController:
         self.display_message("WeConnect-LCD Is Starting")
 
     def __content_into_string(self, content) -> str:
-        if len(max(content, key=len)) > 20:
-            raise ValueError("One of the items given is too long")
         content_string = "".join(item + (20 - len(item)) * " " for item in content)
         if len(content) == 4:
             return content_string
@@ -39,36 +37,69 @@ class LCDController:
         return content_string
 
     def update_lcd(self, content: list) -> None:
+        """
+        Used to update content of the LCD screen
+
+        Args:
+            content (list): List containing contents for each line on the LCD screen.
+                Max lenght for the list is same as the line count on the LCD screen.
+                Max lenght for the items on the list is same as the character count on each line of the LCD screen.
+
+        Raises:
+            ValueError: If given content exceeds the LCD screen dimensions.
+        """
+
         if len(content) > 4:
-            self.display_message("Content list is too long!")
-            LOG.error(f"Given content list is too long (Content: {content})")
-            return
+            error_string = (
+                "Given content list is too long. "
+                "Max lenght is 4. "
+                f"Given content list lenght was {len(content)}. Items on the content list: {content}"
+            )
+            LOG.error(error_string)
+            raise ValueError(error_string)
+
+        if len(max(content, key=len)) > 20:
+            error_string = (
+                "One or more items on the content list were too long. "
+                "Max lenght is 20. "
+                f"First item which was too long was {next(s for s in content if len(s) > 20)}. "
+                f"Items on the content list: {content}"
+            )
+            LOG.error(error_string)
+            raise ValueError(error_string)
 
         if not self.__message_on_screen:
             with self.__print_lock:
                 try:
                     self.__lcd.cursor_pos = (0, 0)
                     self.__lcd.write_string(self.__content_into_string(content))
-                    print(self.__content_into_string(content))
                 except Exception as e:
                     LOG.exception(e)
 
     def backlight_on(self) -> None:
-        if self.__darkmode_timer.is_alive():
-            self.__darkmode_timer.cancel()
+        """
+        Turns on the backlight of the LCD screen and restarts the 30 second timer before backlight turns off.
+        """
+
+        if self.__backlight_timer.is_alive():
+            self.__backlight_timer.cancel()
         self.__lcd.backlight_enabled = True
         self.__start_darkmode_timer()
 
     def backlight_off(self) -> None:
+        """
+        Turns off the backlight of the LCD screen.
+        """
+
         self.__lcd.backlight_enabled = False
 
     def __start_darkmode_timer(self, time=None) -> None:
-        if self.__darkmode_timer.is_alive():
-            self.__darkmode_timer.cancel()
-        self.__darkmode_timer = Timer(
+        if self.__backlight_timer.is_alive():
+            self.__backlight_timer.cancel()
+        self.__backlight_timer = Timer(
             (30 if time is None else time), self.backlight_off
         )
-        self.__darkmode_timer.start()
+        self.__backlight_timer.start()
 
     def __load_custom_characters(self) -> None:
         battery_empty = [0x0E, 0x1B, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1F]
@@ -89,6 +120,10 @@ class LCDController:
         self.__lcd.create_char(7, climate)
 
     def clear_message(self) -> None:
+        """
+        Clears the current displayed message off the LCD screen and displays the next queued message if there is one.
+        """
+
         self.__message_on_screen = False
         if self.__message_queue.empty():
             self.__interactions_enabled = True
@@ -98,9 +133,18 @@ class LCDController:
             self.display_message(queued_msg[0], queued_msg[1])
 
     def display_message(self, message: str, time_on_screen=None) -> None:
-        LOG.debug(f"Queued new message (Content: {message})")
-        if not self.__message_on_screen:
+        """
+        Displays message on the LCD screen.
 
+        Args:
+            message (str): Message that will be displayed on the LCD screen.
+                Message should fit on block with 18x2 characters or some contents will get cut off.
+            time_on_screen (_type_, optional): Time when the message will be cleared off the LCD screen.
+                If time is not given the message will clear off automatically next time when the LCD screen is updated.
+                Defaults to None.
+        """
+
+        if not self.__message_on_screen:
             self.backlight_on()
             with self.__print_lock:
                 if time_on_screen is not None:
