@@ -9,6 +9,15 @@ LOG = logging.getLogger("lcd_message")
 def configure_auto_messages(
     config: dict, weconnect_vehicle: WeConnectVehicle, lcd_controller: LCDController
 ) -> None:
+    '''
+    Used to configure automatic messages defined in the config file.
+
+    Args:
+        config (dict): Dict that contains configurations for the automated messages.
+        weconnect_vehicle (WeConnectVehicle): The WeConnectVehicle-object whose properties should be used for the automated messages.
+        lcd_controller (LCDController): The LCDController-object which controls the LCD screen.
+    '''
+    
     LOG.debug("Initializing WeConnectLCDMessages")
     for message_config in config["automated messages"]:
         WeConnectLCDMessage(message_config, weconnect_vehicle, lcd_controller)
@@ -21,6 +30,15 @@ class WeConnectLCDMessage:
         weconnect_vehicle: WeConnectVehicle,
         lcd_controller: LCDController,
     ) -> None:
+        '''
+        Used to generate new automated message.
+
+        Args:
+            message_config (dict): Dict that contains configuration for the message
+            weconnect_vehicle (WeConnectVehicle): The WeConnectVehicle-object whose properties should be used for the automated messages.
+            lcd_controller (LCDController): The LCDController-object which controls the LCD screen.
+        '''
+        
         self.__id = message_config["id"]
         LOG.debug(f"Initializing WeConnectLCDMessage (ID: {self.__id})")
         self.__lcd_controller = lcd_controller
@@ -33,9 +51,9 @@ class WeConnectLCDMessage:
         self.__data_provider = weconnect_vehicle.get_data_property(
             message_config["data provider id"]
         )
-        self.__data_provider.add_callback_function(self.on_data_update)
+        self.__data_provider.add_callback_function(id="MESSAGE", function=self.__on_data_update)
 
-    def on_data_update(self) -> None:
+    def __on_data_update(self) -> None:
         value = self.__data_provider.custom_value_format(
             translate=self.__translate, include_unit=True
         )
