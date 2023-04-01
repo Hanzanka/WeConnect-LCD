@@ -6,6 +6,10 @@ from .lcd_status_bar import LCDStatusBar
 
 class LCDSceneController:
     def __init__(self) -> None:
+        '''
+        Controls the scenes displayed on the LCD screen.
+        '''
+        
         self.__home_scene = None
         self.__selected_scene = None
         self.__status_bar = None
@@ -17,6 +21,13 @@ class LCDSceneController:
         return self.__lcd_controller
 
     def set_status_bar(self, status_bar: LCDStatusBar) -> None:
+        '''
+        Sets the status bar displayed on top of the LCD screen.
+
+        Args:
+            status_bar (LCDStatusBar): Provides the icons for the status bar.
+        '''
+        
         self.__status_bar = status_bar
 
     def update_status_bar(self) -> None:
@@ -24,9 +35,20 @@ class LCDSceneController:
             self.refresh(self.__selected_scene)
 
     def set_home_scene(self, scene: LCDScene) -> None:
+        '''
+        Sets the home screen. This scene is loaded when returning from scenes that are not loaded by items.
+
+        Args:
+            scene (LCDScene): The scene which will be used as homescreen.
+        '''
+        
         self.__home_scene = scene
 
     def home(self) -> None:
+        '''
+        Loads the home scene.
+        '''
+        
         self.__last_scenes.clear()
         self.load_scene(self.__home_scene)
 
@@ -47,9 +69,6 @@ class LCDSceneController:
     def load_scene(self, scene: LCDScene) -> None:
         self.__selected_scene = scene
         scene.load()
-
-    def add_scene(self, scene: LCDScene) -> None:
-        self.__scenes.append(scene)
 
     def back(self) -> None:
         if not self.__lcd_controller.can_interact:
