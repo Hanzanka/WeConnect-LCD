@@ -14,27 +14,22 @@ from weconnect_id.data_providers.vehicle_data_property import (
 
 class WeConnectBatteryData(WeConnectVehicleData):
     def __init__(self, vehicle: Vehicle) -> None:
+        '''
+        Provides data about battery based properties of the vehicle
+
+        Args:
+            vehicle (Vehicle): Used to provide data to the WeConnectDataProperties.
+        '''
+        
         super().__init__(vehicle)
         self.__import_data()
 
     def __import_data(self) -> None:
         battery_data = self._vehicle.domains["charging"]
-        self._data = {
-            **{},
-            **self.__get_battery_status(battery_data["batteryStatus"]),
-        }
-        self._data = {
-            **self._data,
-            **self.__get_charging_status(battery_data["chargingStatus"]),
-        }
-        self._data = {
-            **self._data,
-            **self.__get_charging_settings(battery_data["chargingSettings"]),
-        }
-        self._data = {
-            **self._data,
-            **self.__get_plug_status(battery_data["plugStatus"]),
-        }
+        self._data.update(self.__get_battery_status(battery_data["batteryStatus"]))
+        self._data.update(self.__get_charging_status(battery_data["chargingStatus"]))
+        self._data.update(self.__get_charging_settings(battery_data["chargingSettings"]))
+        self._data.update(self.__get_plug_status(battery_data["plugStatus"]))
 
     def __get_battery_status(self, battery_status: BatteryStatus) -> dict:
         battery_status_data = {}

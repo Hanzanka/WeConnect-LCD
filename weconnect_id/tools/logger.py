@@ -1,3 +1,7 @@
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from data_providers.vehicle_data_property import WeConnectVehicleDataProperty
+
 import csv
 from pathlib import Path
 import os
@@ -11,16 +15,14 @@ class WeConnectLoggerError(Exception):
 LOG = logging.getLogger("vehicle_data_logger")
 
 
-def log(data_property) -> None:
-    """
-    Logs data from WeConnectVehicleDataProperty-object to csv file in given path
+def log(data_property: WeConnectVehicleDataProperty) -> None:
+    '''
+    Used to log data from WeConnectVehicleDataProperties
 
     Args:
-        data (WeConnectVehicleDataProperty): [WeConnectVehicleDataProperty-object where data is logged from]
-
-    Raises:
-        WeConnectLoggerError: [Raised if creating dir to given path fails or if writing to file fails]
-    """
+        data_property (WeConnectVehicleDataProperty): WeConnectVehicleDataProperty where the data is logged from.
+    '''
+    
     path = data_property.logger_path
     LOG.debug(
         f"Logging data from WeconnectVehicleDataProperty (ID: {data_property.id})"

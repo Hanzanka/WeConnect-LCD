@@ -1,8 +1,8 @@
 from enum import Enum
-import logging
 from threading import Event, Lock, Timer
 import RPi.GPIO as GPIO
 from threading import Thread
+import logging
 
 
 LOG = logging.getLogger("button")
@@ -24,7 +24,22 @@ class PushButton:
         long_press_time: float = None,
         long_press_args: list = None
     ) -> None:
-        LOG.debug(f"Initializing PushButton (ID: {id})")
+        '''
+        Initializes physical button backend functionality.
+
+        Args:
+            pin (int): Pin that the button is connected to.
+            id (_type_): ID of the button.
+            click_callback (callable): Function ran when the button is clicked.
+            click_args (list, optional): Arguments for the function ran when the button is clicked. Defaults to None.
+            long_press_callback (callable, optional): Function ran when button is pressed down. Defaults to None.
+            long_press_time (float, optional): Time when the button detects it is pressed down. Defaults to None.
+            long_press_args (list, optional): Arguments for the function ran when the button is pressed down. Defaults to None.
+
+        Raises:
+            ValueError: Raised if long press time is below one second.
+        '''
+        
         self.__id = id
         self.__pin = pin
 
@@ -47,10 +62,18 @@ class PushButton:
         GPIO.setup(self.__pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
     def enable(self) -> None:
+        '''
+        Enables the button functionality.
+        '''
+        
         GPIO.remove_event_detect(self.__pin)
         GPIO.add_event_detect(self.__pin, GPIO.BOTH, callback=self.__on_button_event)
 
     def disable(self) -> None:
+        '''
+        Disables the button functionality.
+        '''
+        
         GPIO.remove_event_detect(self.__pin)
 
     def __on_button_event(self, pin) -> None:
@@ -94,21 +117,17 @@ class PushButton:
         return PushButton.ButtonAction.CLICK
 
     def __released(self) -> None:
-        LOG.info(f"PushButton (ID: {self.__id}) was released")
         self.__button_event.set()
 
     def __pressed(self) -> None:
-        LOG.info(f"PushButton (ID: {self.__id}) was pressed")
         self.__button_event.clear()
 
         button_action = self.__wait_for_release()
 
         if button_action == PushButton.ButtonAction.INVALID:
-            LOG.info(f"PushButton (ID: {self.__id}) got invalid action")
             return
 
         if button_action == PushButton.ButtonAction.CLICK:
-            LOG.info(f"PushButton (ID: {self.__id}) was clicked")
             try:
                 self.__click_callback(*self.__click_args)
             except Exception as e:
@@ -116,7 +135,6 @@ class PushButton:
             return
 
         if button_action == PushButton.ButtonAction.HOLD:
-            LOG.info(f"PushButton (ID: {self.__id}) was long pressed")
             try:
                 self.__long_press_callback(*self.__long_press_args)
             except Exception as e:

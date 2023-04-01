@@ -23,6 +23,16 @@ class WeConnectVehicleLoader:
         config: dict,
         scene_builder: SceneBuilder,
     ) -> None:
+        '''
+        Used to load vehicle based items.
+
+        Args:
+            lcd_scene_controller (LCDSceneController): Used to provide new scenes and set home screen.
+            weconnect_updater (WeConnectUpdater): Used to initialize new objects for the app.
+            config (dict): Used to initialize new objects for the app.
+            scene_builder (SceneBuilder): Used to build new scenes.
+        '''
+        
         self.__lcd_scene_controller = lcd_scene_controller
         self.__lcd_controller = lcd_scene_controller.lcd_controller
         self.__vehicle_change_allowed = True

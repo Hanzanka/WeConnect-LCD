@@ -15,6 +15,23 @@ class OptionsMenuScene(LCDScene):
         title: str = None,
         items_selectable: bool = True,
     ) -> None:
+        '''
+        Options menu. Currently used for:
+            Changing selected vehicle.
+            Rebooting the system.
+            Shutting down the system.
+            Closing the app.
+
+        Args:
+            id (str): ID for the scene.
+            lcd_scene_controller (_type_): LCDSceneController-object used to control the scenes of the LCD screen.
+            vehicle_selection_scene (LCDScene): Scene that is used to select used vehicle.
+            close_app_event (Event): Event which prevents the main thread for exiting.
+            items (list, optional): Keep this as None. Defaults to None.
+            title (str, optional): Title for the scene. Defaults to None.
+            items_selectable (bool, optional): Keep this as True. Defaults to True.
+        '''
+        
         super().__init__(id, lcd_scene_controller, items, title, items_selectable)
 
         self.__vehicle_selection_scene = vehicle_selection_scene

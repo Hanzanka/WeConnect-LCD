@@ -3,6 +3,13 @@ from weconnect.elements.vehicle import Vehicle
 
 class WeConnectVehicleData:
     def __init__(self, vehicle: Vehicle) -> None:
+        '''
+        Used to store and provide WeConnectVehicleDataProperties.
+
+        Args:
+            vehicle (Vehicle): Used to provide data to the WeConnectDataProperties.
+        '''
+        
         self._vehicle = vehicle
         self._data = {}
 

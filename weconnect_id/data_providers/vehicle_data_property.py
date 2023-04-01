@@ -14,12 +14,23 @@ LOG = logging.getLogger("data_properties")
 class WeConnectVehicleDataProperty:
     def __init__(
         self,
-        id,
+        id: str,
         weconnect_element: AddressableAttribute,
-        category,
-        desc=None,
-        unit=None,
+        category: str,
+        desc: str = None,
+        unit: str = None,
     ) -> None:
+        """
+        Used to store vehicle based data.
+
+        Args:
+            id (str): ID of the data property
+            weconnect_element (AddressableAttribute): WeConnect-API element that provides data to the data property.
+            category (str): Category where the data property belongs to.
+            desc (str, optional): Description for the data property. Defaults to None.
+            unit (str, optional): Unit for the data property. Defaults to None.
+        """
+
         LOG.debug(f"Initializing WeconnectVehicleDataProperty (ID: {id})")
         self._id = id
         self.__category = category
@@ -35,12 +46,17 @@ class WeConnectVehicleDataProperty:
             self._date_updated = datetime.now().date().strftime("%d.%m.%Y")
             weconnect_element.addObserver(
                 observer=self.__update_value,
-                flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
+                flag=AddressableLeaf.ObserverEvent.ENABLED
+                | AddressableLeaf.ObserverEvent.DISABLED
+                | AddressableLeaf.ObserverEvent.VALUE_CHANGED,
                 priority=AddressableLeaf.ObserverPriority.INTERNAL_HIGH,
             )
-        self._callback_functions = []
+        self._callback_functions = {}
         self.__logging_enabled = False
         self.__logger_path = None
+
+    def __str__(self) -> str:
+        return self._value_string
 
     @property
     def id(self) -> str:
@@ -87,6 +103,17 @@ class WeConnectVehicleDataProperty:
         )
 
     def custom_value_format(self, translate=False, include_unit=True) -> str:
+        """
+        Used to get the value of the data property with unit.
+
+        Args:
+            translate (bool, optional): If the returned data should be translated. Defaults to False.
+            include_unit (bool, optional): If the unit should be included in the returned string. Defaults to True.
+
+        Returns:
+            str: String generated with given arguments.
+        """
+
         try:
             return (
                 self.__translations[self._value_string]
@@ -102,17 +129,46 @@ class WeConnectVehicleDataProperty:
         self._value_string = str(
             self._value.value if isinstance(self._value, Enum) else self._value
         )
+
         self._time_updated = datetime.now().time().strftime("%H.%M:%S")
         self._date_updated = datetime.now().date().strftime("%d.%m.%Y")
-        for function in self._callback_functions:
-            function()
+
+        for callback in self._callback_functions.values():
+            if callback["specific values"] is None:
+                callback["function"](*callback["args"])
+            elif self._value in callback["specific values"]:
+                callback["function"](*callback["args"])
+
         self.log()
 
-    def add_callback_function(self, function: callable) -> None:
+    def add_callback_function(
+        self, id, function: callable, args: list = None, specific_values: list = None
+    ) -> None:
+        """
+        Adds callback function to the data property which are called when the data provider receives an update.
+
+        Args:
+            id: ID for the function so it can be removed later.
+            function (callable): Function to be called when an update. occurs
+            args (list, optional): Arguments for the given function. Defaults to None.
+            specific_values (list, optional): If the function should be called only when data provider gets specific values. Defaults to None.
+        """
+
+        self._callback_functions[id] = {
+            "id": id,
+            "function": function,
+            "specific values": specific_values,
+            "args": [] if args is None else args,
+        }
         LOG.debug(
-            f"Added callback function {function.__name__} to WeconnectVehicleDataProperty (ID: {self._id})"
+            f"Added callback function (ID: {id}) to WeConnectVehicleDataProperty (ID: {self._id})"
         )
-        self._callback_functions.append(function)
+
+    def remove_callback_function(self, id) -> None:
+        self._callback_functions.pop(id)
+        LOG.debug(
+            f"Removed callback function (ID: {id}) from WeConnectVehicleDataProperty (ID: {self._id})"
+        )
 
     def log(self) -> None:
         if not self.__logging_enabled:
@@ -126,6 +182,13 @@ class WeConnectVehicleDataProperty:
             LOG.exception(e)
 
     def add_translations(self, translations: dict) -> None:
+        """
+        Adds translations for data provider values.
+
+        Args:
+            translations (dict): Dict containing the translations.
+        """
+
         if self.__translations is None:
             LOG.debug(
                 f"Added translations ({translations}) to WeconnectVehicleDataProperty (ID: {self._id})"
@@ -133,6 +196,13 @@ class WeConnectVehicleDataProperty:
             self.__translations = translations
 
     def enable_logging(self, path: str) -> None:
+        """
+        Used to enable logging for the data property values.
+
+        Args:
+            path (str): Path of the .csv file where logs will get saved.
+        """
+
         LOG.debug(
             f"Enabled logging on WeconnectVehicleDataProperty (ID: {self._id}), logs will be saved to '{path}'"
         )
@@ -143,8 +213,29 @@ class WeConnectVehicleDataProperty:
 
 class CalculatedWeConnectVehicleDataProperty(WeConnectVehicleDataProperty):
     def __init__(
-        self, id, weconnect_element, category, formula: callable, desc=None, unit=None
+        self,
+        id: str,
+        weconnect_element: AddressableAttribute,
+        category: str,
+        formula: callable,
+        desc: str = None,
+        unit: str = None,
     ) -> None:
+        """
+        Used to generate data property of an value the API doesn't provide, but it can be calculated using other property.
+
+        Args:
+            id (str): ID of the data property
+            weconnect_element (AddressableAttribute): WeConnect-API element that is used to calculate the value for the data property.
+            category (str): Category where the data property belongs to.
+            formula (callable): Function used to calculate the value for the data property.
+            desc (_type_, optional): Description for the data property. Defaults to None.
+            unit (_type_, optional): Unit for the data property. Defaults to None.
+
+        Raises:
+            AttributeError: Raised if the type of the value provided by the WeConnect-API element is not int nor float.
+        """
+
         LOG.debug(f"Initializing CalculatedWeConnectVehicleDataProperty (ID: {id})")
         if not isinstance(weconnect_element.value, int) and not isinstance(
             weconnect_element.value, float
@@ -178,8 +269,14 @@ class CalculatedWeConnectVehicleDataProperty(WeConnectVehicleDataProperty):
         calculation = self.__formula(element.value)
         self._value = calculation
         self._value_string = str(calculation)
-        for function in self._callback_functions:
-            function()
+
         self._time_updated = datetime.now().time().strftime("%H.%M:%S")
         self._date_updated = datetime.now().date().strftime("%d.%m.%Y")
+
+        for callback in self._callback_functions.values():
+            if callback["specific values"] is None:
+                callback["function"](*callback["args"])
+            elif self._value in callback["specific values"]:
+                callback["function"](*callback["args"])
+
         self.log()

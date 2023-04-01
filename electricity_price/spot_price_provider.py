@@ -9,6 +9,13 @@ from display.lcd_scene_controller import LCDSceneController
 
 class SpotPriceProvider:
     def __init__(self, lcd_scene_controller: LCDSceneController) -> None:
+        '''
+        Gets current electricity prices in Finland.
+
+        Args:
+            lcd_scene_controller (LCDSceneController): LCDSceneController-object used to control the scenes of the LCD screen.
+        '''
+        
         self.__prices = {}
         self.__price_now = None
         self.__price_now_item = None

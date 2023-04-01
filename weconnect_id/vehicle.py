@@ -24,6 +24,14 @@ class WeConnectVehicle:
     CAR_BRANDS = {"WCAR": "Volkswagen"}
 
     def __init__(self, vehicle: Vehicle, config: dict) -> None:
+        '''
+        Contains all data related to the selected vehicle and used to interact with climate controls.
+
+        Args:
+            vehicle (Vehicle): Used to provide data to the WeConnectVehicleDataProperties, to enable features and interact with climate controller.
+            config (dict): Provides configurations for WeConnectVehicleDataProperties.
+        '''
+        
         self.__import_vehicle_properties(vehicle=vehicle)
         self.__api_vehicle.enableTracker()
 
@@ -44,6 +52,15 @@ class WeConnectVehicle:
         lcd_controller: LCDController,
         weconnect_vehicle_loader: WeConnectVehicleLoader,
     ) -> None:
+        '''
+        Used to setup the ClimateController.
+
+        Args:
+            weconnect_updater (WeConnectUpdater): Used in ClimateController setup.
+            lcd_controller (LCDController): Used in ClimateController setup.
+            weconnect_vehicle_loader (WeConnectVehicleLoader): Used in ClimateController setup.
+        '''
+        
         self.__climate_controller = ClimateController(
             weconnect_vehicle=self,
             weconnect_updater=weconnect_updater,
@@ -73,6 +90,10 @@ class WeConnectVehicle:
             self.__data[data_id].enable_logging((config["paths"]["data_logs"]))
 
     def start_climate_control(self) -> None:
+        '''
+        Starts the climate controller of the vehicle.
+        '''
+        
         if self.__climate_controller is None:
             return
         try:
@@ -82,6 +103,10 @@ class WeConnectVehicle:
             LOG.exception(e)
 
     def stop_climate_control(self) -> None:
+        '''
+        Stops the climate controller of the vehicle.
+        '''
+        
         if self.__climate_controller is None:
             return
         try:
@@ -91,6 +116,10 @@ class WeConnectVehicle:
             LOG.exception(e)
 
     def switch_climate_control(self) -> None:
+        '''
+        Switches the climate controller state of the vehicle.
+        '''
+        
         if self.__climate_controller is None:
             return
         try:
@@ -100,6 +129,13 @@ class WeConnectVehicle:
             LOG.exception(e)
 
     def set_climate_controller_temperature(self, temperature: float) -> None:
+        '''
+        Sets the climate controller temperature of the vehicle.
+
+        Args:
+            temperature (float): Target temperature of the climate controller.
+        '''
+        
         if self.__climate_controller is None:
             return
         try:
@@ -111,6 +147,16 @@ class WeConnectVehicle:
             LOG.exception(e)
 
     def get_data_property(self, data_property_id: str) -> WeConnectVehicleDataProperty:
+        '''
+        Get WeConnectVehicleDataProperty using it's ID.
+
+        Args:
+            data_property_id (str): ID of the WeConnectVehicleDataProperty.
+
+        Returns:
+            WeConnectVehicleDataProperty
+        '''
+        
         return self.__data[data_property_id]
 
     @property

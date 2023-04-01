@@ -12,20 +12,21 @@ from weconnect_id.data_providers.vehicle_data_property import (
 
 class WeConnectClimateData(WeConnectVehicleData):
     def __init__(self, vehicle: Vehicle) -> None:
+        '''
+        Provides data about climate controller based properties of the vehicle
+
+        Args:
+            vehicle (Vehicle): Used to provide data to the WeConnectDataProperties.
+        '''
+        
         super().__init__(vehicle)
         self.__import_data()
 
     def __import_data(self) -> dict:
         climate_data = self._vehicle.domains["climatisation"]
         self._data = self.__get_climate_status(climate_data["climatisationStatus"])
-        self._data = {
-            **self._data,
-            **self.__get_climate_settings(climate_data["climatisationSettings"]),
-        }
-        self._data = {
-            **self._data,
-            **self.__get_window_heating_status(climate_data["windowHeatingStatus"]),
-        }
+        self._data.update(self.__get_climate_settings(climate_data["climatisationSettings"]))
+        self._data.update(self.__get_window_heating_status(climate_data["windowHeatingStatus"]))
 
     def __get_climate_status(self, climate_status: ClimatizationStatus) -> dict:
         climate_status_data = {}

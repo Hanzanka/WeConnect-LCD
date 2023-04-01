@@ -5,22 +5,29 @@ from weconnect.elements.vehicle import Vehicle
 from weconnect_id.data_providers.vehicle_data_property import (
     WeConnectVehicleDataProperty,
 )
+from weconnect.elements.readiness_status import ReadinessStatus
 
 
 class WeConnectReadinessData(WeConnectVehicleData):
     def __init__(self, vehicle: Vehicle) -> None:
+        '''
+        Provides data about readiness based properties of the vehicle
+
+        Args:
+            vehicle (Vehicle): Used to provide data to the WeConnectDataProperties.
+        '''
+        
         super().__init__(vehicle)
         self.__import_data()
 
     def __import_data(self) -> None:
         readiness_data = self._vehicle.domains["readiness"]["readinessStatus"]
         self._data = self.__get_connection_state(readiness_data.connectionState)
-        self._data = {
-            **self._data,
-            **self.__get_warnings(readiness_data.connectionWarning),
-        }
+        self._data.update(self.__get_warnings(readiness_data.connectionWarning))
 
-    def __get_connection_state(self, connection_status) -> dict:
+    def __get_connection_state(
+        self, connection_status: ReadinessStatus.ConnectionState
+    ) -> dict:
         connection_data = {}
         weconnect_element = connection_status.isOnline
         connection_data[
@@ -42,7 +49,7 @@ class WeConnectReadinessData(WeConnectVehicleData):
         )
         return connection_data
 
-    def __get_warnings(self, warnings) -> dict:
+    def __get_warnings(self, warnings: ReadinessStatus.ConnectionWarning) -> dict:
         warnings_data = {}
         weconnect_element = warnings.insufficientBatteryLevelWarning
         warnings_data[

@@ -2,6 +2,13 @@ import logging
 
 
 def load_loggers(config: dict) -> None:
+    '''
+    Configures the loggers used to log app's events.
+
+    Args:
+        config (dict): Configurations for the loggers.
+    '''
+    
     logs_path = config["paths"]["application_logs"]
 
     base_formatter = logging.Formatter(

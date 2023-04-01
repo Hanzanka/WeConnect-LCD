@@ -10,6 +10,14 @@ if TYPE_CHECKING:
 
 
 def load_automated_leds(config: dict, weconnect_vehicle: WeConnectVehicle) -> None:
+    """
+    Loads the automated LEDs that are configured in the app configuration file.
+
+    Args:
+        config (dict): Configurations for the automated LEDs.
+        weconnect_vehicle (WeConnectVehicle): WeConnectVehicle-object used to provide data for automated LED triggers.
+    """
+
     led_configs = config["automated leds"]
     for led_config in led_configs:
         LEDDriver(
@@ -23,9 +31,21 @@ def load_automated_leds(config: dict, weconnect_vehicle: WeConnectVehicle) -> No
 
 class LEDTrigger:
     def __init__(
-        self, led_driver: LEDDriver, trigger, weconnect_vehicle: WeConnectVehicle
+        self, led_driver: LEDDriver, trigger: dict, weconnect_vehicle: WeConnectVehicle
     ) -> None:
-        self.__driver = led_driver
+        """
+        Used to automatically operate the LED with WeConnectVehicleDataProperty values.
+
+        Args:
+            led_driver (LEDDriver): LEDDriver-object used to control the LED.
+            trigger (_type_): Dict that contains configuration for automated operation of the LED.
+            weconnect_vehicle (WeConnectVehicle): WeConnectVehicle-object used to provide data for automated LED triggers.
+
+        Raises:
+            e: Raised when error is detected initializing the trigger.
+        """
+
+        self.__led_driver = led_driver
 
         try:
             self.__default_mode = trigger["default mode"]
@@ -44,18 +64,19 @@ class LEDTrigger:
 
             else:
                 self.__trigger_values = trigger["trigger values"]
+
             self.__data_provider = weconnect_vehicle.get_data_property(
                 trigger["data id"]
             )
             self.__data_provider.add_callback_function(
-                id="LED", function=self.__on_data_update
+                id="LED", function=self._on_data_update
             )
 
         except Exception as e:
             raise e
 
-    def __on_data_update(self) -> None:
-        self.__driver.on_trigger_update(self.__get_trigger_value())
+    def _on_data_update(self) -> None:
+        self.__led_driver._on_trigger_update(self.__get_trigger_value())
 
     def __get_trigger_value(self):
         if self.__compare:
@@ -92,6 +113,16 @@ class LEDDriver:
         trigger=None,
         weconnect_vehicle: WeConnectVehicle = None,
     ) -> None:
+        """
+        Initializes LED.
+
+        Args:
+            pin (_type_): Pin that the LED is connected to.
+            id (_type_): ID of the LED.
+            default_blinker_frequency (_type_): _description_
+            trigger (_type_, optional): _description_. Defaults to None.
+            weconnect_vehicle (WeConnectVehicle, optional): _description_. Defaults to None.
+        """
 
         self.__id = id
         self.__pin = pin
@@ -110,7 +141,9 @@ class LEDDriver:
                 "off": self.turn_off,
                 "blink": self.blink,
             }
-            self.__trigger = LEDTrigger(self, trigger, weconnect_vehicle)
+            self.__trigger = LEDTrigger(
+                led_driver=self, trigger=trigger, weconnect_vehicle=weconnect_vehicle
+            )
             self.__load_led_mode()
 
     @property
@@ -121,7 +154,7 @@ class LEDDriver:
     def state(self) -> Enum:
         return self.__state
 
-    def on_trigger_update(self, trigger_command) -> None:
+    def _on_trigger_update(self, trigger_command) -> None:
         if trigger_command is not None:
             if isinstance(trigger_command, tuple):
                 self.__trigger_functions[trigger_command[0]](trigger_command[1])
@@ -129,7 +162,7 @@ class LEDDriver:
                 self.__trigger_functions[trigger_command]()
 
     def __load_led_mode(self) -> None:
-        self.__trigger.__on_data_update()
+        self.__trigger._on_data_update()
 
     def __turn_LED_off(self) -> None:
         GPIO.output(self.__pin, GPIO.LOW)

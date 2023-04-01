@@ -101,6 +101,20 @@ class ClimateController:
         lcd_controller: LCDController,
         weconnect_vehicle_loader: WeConnectVehicleLoader,
     ) -> None:
+        '''
+        Used to remotely turn on/off the climate controller and set the climate controller temperature of given vehicle.
+
+        Args:
+            weconnect_vehicle (WeConnectVehicle): Specifies which vehicle the operations will take effect on.
+            weconnect_updater (WeConnectUpdater): Used to fetch data from server.
+            lcd_controller (LCDController): Used to display messages to the LCD screen informing about ongoing operations.
+            weconnect_vehicle_loader (WeConnectVehicleLoader):
+                Is used to temporarily disable ability to change which vehicle the app uses during climate controller operations.
+
+        Raises:
+            ClimateControllerCompatibilityError: Raised if vehicle is not compatible with remote climate controls.
+        '''
+        
         self.__vehicle = weconnect_vehicle.api_vehicle
         self.__weconnect_updater = weconnect_updater
         self.__operation_led = create_led_driver(
@@ -138,6 +152,13 @@ class ClimateController:
 
     @property
     def availability_status(self) -> AvailabilityState:
+        '''
+        Used to check climate controller's availability status.
+
+        Returns:
+            AvailabilityState: Availability status of the climate controller.
+        '''
+        
         return self.__availability_status
 
     @property
@@ -145,6 +166,10 @@ class ClimateController:
         return self.__climate_state
 
     def switch(self) -> None:
+        '''
+        Switches the climate controller state.
+        '''
+        
         LOG.info("Requested to switch climate controller state")
         self.__weconnect_updater.update(domains=[Domain.CLIMATISATION], silent=False)
         if self.__climate_state.value in self.CLIMATE_CONTROL_VALUES_OFF:
@@ -153,6 +178,10 @@ class ClimateController:
             self.stop()
 
     def start(self) -> None:
+        '''
+        Starts the climate controller
+        '''
+        
         LOG.info("Requested to start climate controller")
         self.__lcd_controller.display_message(
             message="Käynnistetään Ilmastointia", time_on_screen=3
@@ -160,6 +189,10 @@ class ClimateController:
         self.__post_request(ControlOperation.START)
 
     def stop(self) -> None:
+        '''
+        Stops the climate controller.
+        '''
+        
         LOG.info("Requested to stop climate controller")
         self.__lcd_controller.display_message(
             message="Pysäytetään Ilmastointia", time_on_screen=3
@@ -167,6 +200,18 @@ class ClimateController:
         self.__post_request(ControlOperation.STOP)
 
     def set_temperature(self, temperature: float) -> None:
+        '''
+        Sets the climate controller temperature.
+
+        Args:
+            temperature (float): New value for the climate controller temperature.
+                Must be between 15.5 and 30°C.
+
+        Raises:
+            TemperatureOutOfRangeError: Raised if given temperature is out of range of 15.5 - 30°C.
+            FailedToSetTemperatureError: Raised if unknown error occurs.
+        '''
+        
         LOG.info(
             f"Requested to change climate controller target temperature to {temperature}°C"
         )

@@ -20,6 +20,16 @@ class SceneBuilder:
         lcd_scene_controller: LCDSceneController,
         spot_price_provider: SpotPriceProvider,
     ) -> None:
+        '''
+        Builds the scenes used in the user interface.
+
+        Args:
+            config (dict): App configuration file.
+            weconnect_updater (WeConnectUpdater): WeConnectUpdater-object used to update the app data.
+            lcd_scene_controller (LCDSceneController): LCDSceneController-object used to control the scenes of the LCD screen.
+            spot_price_provider (SpotPriceProvider): SpotPriceProvider-object that provides electricity prices.
+        '''
+        
         self.__config = config
         self.__scene_config = config["lcd scenes"]
         self.__item_config = config["lcd items"]
@@ -28,6 +38,16 @@ class SceneBuilder:
         self.__spot_price_provider = spot_price_provider
 
     def load_scenes(self, weconnect_vehicle: WeConnectVehicle) -> dict:
+        '''
+        Builds the scenes for the user interface.
+
+        Args:
+            weconnect_vehicle (WeConnectVehicle): WeConnectVehicle-object whose data is used in the items generated.
+
+        Returns:
+            dict: Returns dict where scenes are stored in id - scene pairs.
+        '''
+        
         custom_scenes = {
             "climate temperature": ClimateControllerTemperatureScene(
                 lcd_scene_controller=self.__lcd_scene_controller,

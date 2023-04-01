@@ -19,6 +19,14 @@ class WeConnectUpdater:
     DOMAINS = [Domain.CHARGING, Domain.CLIMATISATION, Domain.READINESS]
 
     def __init__(self, weconnect: WeConnect, config: dict) -> None:
+        '''
+        Used to update the data for the app from the server.
+
+        Args:
+            weconnect (WeConnect): WeConnect-API instance which is used to update data from server.
+            config (dict): Configuration dict for the updater.
+        '''
+        
         self.__weconnect = weconnect
         self.__update_led = create_led_driver(
             pin=config["pin layout"]["led updater"],
