@@ -7,6 +7,17 @@ class LCDScene:
         title: str = None,
         items_selectable: bool = True,
     ) -> None:
+        '''
+        _summary_
+
+        Args:
+            id (str): ID of the scene.
+            lcd_scene_controller (None): LCDSceneController-object used to control the scenes of the LCD screen.
+            items (list, optional): List containing items for the scene. Defaults to None.
+            title (str, optional): Title for the scene. Title is always visible on the top line of the LCD screen. Defaults to None.
+            items_selectable (bool, optional): If items of the scene should be interactable. Defaults to True.
+        '''
+        
         self._id = id
         self._lcd_scene_controller = lcd_scene_controller
 
