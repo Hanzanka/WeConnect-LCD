@@ -15,6 +15,14 @@ class LCDStatusBar:
         weconnect_vehicle: WeConnectVehicle,
         lcd_scene_controller: LCDSceneController,
     ) -> None:
+        '''
+        Displays icons on top of the LCD screen when scene with title is displayed.
+
+        Args:
+            weconnect_vehicle (WeConnectVehicle): The WeConnectVehicle-object whose data is used to generate the icons.
+            lcd_scene_controller (LCDSceneController): The LCDSceneController-object which controls the scenes on the LCD screen.
+        '''
+        
         self.__weconnect_vehicle = weconnect_vehicle
         self.__lcd_scene_controller = lcd_scene_controller
 
