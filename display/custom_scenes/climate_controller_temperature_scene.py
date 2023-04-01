@@ -14,6 +14,15 @@ class ClimateControllerTemperatureScene(LCDScene):
     def __init__(
         self, id, lcd_scene_controller, weconnect_vehicle: WeConnectVehicle
     ) -> None:
+        '''
+        Initializes scene for changing the target temperature of the climate controller.
+
+        Args:
+            id (_type_): ID for the scene.
+            lcd_scene_controller (_type_): LCDSceneController-object used to control the scenes of the LCD screen.
+            weconnect_vehicle (WeConnectVehicle): WeConnectVehicle-object where the temperature should be applied.
+        '''
+        
         super().__init__(id=id, lcd_scene_controller=lcd_scene_controller)
         LOG.debug(f"Initializing ClimateControllerTemperatureScene (ID: {id})")
         self.__weconnect_vehicle = weconnect_vehicle
