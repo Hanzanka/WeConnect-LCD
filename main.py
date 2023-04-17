@@ -72,7 +72,9 @@ lcd_controller.display_message("Initializing Updater")
 weconnect_updater = WeConnectUpdater(weconnect=weconnect, config=config)
 
 selected_vin = config["selected vehicle vin"]
-lcd_controller.display_message(message="Selected Vehicle: " + str(weconnect.vehicles[selected_vin].nickname))
+lcd_controller.display_message(
+    message="Selected Vehicle: " + str(weconnect.vehicles[selected_vin].nickname)
+)
 sleep(2)
 
 spot_price_provider = SpotPriceProvider(lcd_scene_controller=lcd_scene_controller)
@@ -114,7 +116,7 @@ weconnect_vehicle_loader = WeConnectVehicleLoader(
     config=config,
     lcd_scene_controller=lcd_scene_controller,
     weconnect_updater=weconnect_updater,
-    scene_builder=scene_builder
+    scene_builder=scene_builder,
 )
 
 vehicle_selection_scene = VehicleSelectionScene(

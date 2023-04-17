@@ -5,6 +5,10 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from display.lcd_item import LCDItem
 from display.lcd_scene import LCDScene
 from display.lcd_scene_controller import LCDSceneController
+import logging
+
+
+LOG = logging.getLogger("spot_price_provider")
 
 
 class SpotPriceProvider:
@@ -13,9 +17,10 @@ class SpotPriceProvider:
         Gets current electricity prices in Finland.
 
         Args:
-            lcd_scene_controller (LCDSceneController): LCDSceneController-object used to control the scenes of the LCD screen.
+            lcd_scene_controller (LCDSceneController): Used to display electricity prices on the LCD screen.
         '''
         
+        LOG.debug("Initializing SpotPriceProvider")
         self.__prices = {}
         self.__price_now = None
         self.__price_now_item = None
@@ -36,8 +41,10 @@ class SpotPriceProvider:
             minute="0, 15, 30, 45",
             id="spot price updater",
         )
+        LOG.debug("Successfully initialized SpotPriceProvider")
 
     def __update(self) -> None:
+        LOG.debug("Updating SpotPriceProvider data")
         with urllib.request.urlopen("https://api.spot-hinta.fi/Today") as url:
             data = json.loads(url.read().decode())
 
@@ -53,6 +60,7 @@ class SpotPriceProvider:
         self.__price_now = self.__prices[datetime.now().strftime("%H")]["PriceWithTax"]
         if self.__items_created:
             self.__update_items()
+        LOG.debug("Successfully updated SpotPriceProvider data")
 
     def __create_items(self) -> None:
         self.__price_items = {}

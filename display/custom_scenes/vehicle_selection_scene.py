@@ -32,7 +32,7 @@ class VehicleSelectionScene(LCDScene):
             items_selectable (bool, optional): Keep as True. Defaults to True.
         '''
         
-        LOG.debug(f"Initializing VehicleSelectionScene (ID: f{id})")
+        LOG.debug(f"Initializing VehicleSelectionScene (ID: {id})")
         super().__init__(id, lcd_scene_controller, items, title, items_selectable)
 
         self.__weconnect_vehicle_loader = weconnect_vehicle_loader
@@ -48,7 +48,7 @@ class VehicleSelectionScene(LCDScene):
                     target_args=[vin],
                 )
             )
-        LOG.debug(f"Successfully initialized VehicleSelectionScene (ID: f{self._Id})")
+        LOG.debug(f"Successfully initialized VehicleSelectionScene (ID: {self._Id})")
 
     def __select_vehicle(self, vin: str) -> None:
         self.__weconnect_vehicle_loader.load_vehicle_dependent_items(

@@ -24,7 +24,7 @@ class LCDScene:
             items_selectable (bool, optional): If LCDItems of the LCDScene should be interactable. Defaults to True.
         '''
         
-        LOG.debug(f"Initializing LCDScene (ID: f{id})")
+        LOG.debug(f"Initializing LCDScene (ID: {id})")
         self._id = id
         self._lcd_scene_controller = lcd_scene_controller
 
@@ -39,7 +39,7 @@ class LCDScene:
         self.__startpoint = 0
         self.__endpoint = 4 if self.__title is None else 3
         self._selected_index = 0
-        LOG.debug(f"Successfully initialized LCDScene (ID: f{self._id})")
+        LOG.debug(f"Successfully initialized LCDScene (ID: {self._id})")
 
     @property
     def id(self):
@@ -70,13 +70,13 @@ class LCDScene:
         lcd_item.add_scene(self)
 
     def load(self) -> None:
-        LOG.debug(f"Loading LCDScene (ID: f{self._id})")
+        LOG.debug(f"Loading LCDScene (ID: {self._id})")
         if self.__items_selectable:
             self.__select_item()
         self.update()
 
     def exit(self) -> None:
-        LOG.debug(f"Exiting LCDScene (ID: f{self.id})")
+        LOG.debug(f"Exiting LCDScene (ID: {self.id})")
         if self.__items_selectable:
             self.__unselect_item()
 

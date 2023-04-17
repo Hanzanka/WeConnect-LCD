@@ -152,7 +152,7 @@ class LCDController:
                 Defaults to None.
         """
 
-        LOG.debug(f"New message queued (Content: f{message})")
+        LOG.debug(f"New message queued (Content: {message})")
         if not self.__message_on_screen:
             self.backlight_on()
             with self.__print_lock:

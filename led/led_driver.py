@@ -4,9 +4,13 @@ from enum import Enum
 import RPi.GPIO as GPIO
 from threading import Timer, Lock
 import operator
+import logging
 
 if TYPE_CHECKING:
     from weconnect_id.vehicle import WeConnectVehicle
+
+
+LOG = logging.getLogger("led")
 
 
 def load_automated_leds(config: dict, weconnect_vehicle: WeConnectVehicle) -> None:
@@ -15,9 +19,10 @@ def load_automated_leds(config: dict, weconnect_vehicle: WeConnectVehicle) -> No
 
     Args:
         config (dict): Configurations for the automated LEDs.
-        weconnect_vehicle (WeConnectVehicle): WeConnectVehicle-object used to provide data for automated LED triggers.
+        weconnect_vehicle (WeConnectVehicle): Used to provide data for the LEDTriggers.
     """
 
+    LOG.debug("Initializing automated LEDs")
     led_configs = config["automated leds"]
     for led_config in led_configs:
         LEDDriver(
@@ -27,6 +32,7 @@ def load_automated_leds(config: dict, weconnect_vehicle: WeConnectVehicle) -> No
             trigger=led_config["trigger"],
             weconnect_vehicle=weconnect_vehicle,
         )
+    LOG.debug("Successfully initialized automated LEDs")
 
 
 class LEDTrigger:
@@ -37,14 +43,15 @@ class LEDTrigger:
         Used to automatically operate the LED with WeConnectVehicleDataProperty values.
 
         Args:
-            led_driver (LEDDriver): LEDDriver-object used to control the LED.
-            trigger (_type_): Dict that contains configuration for automated operation of the LED.
-            weconnect_vehicle (WeConnectVehicle): WeConnectVehicle-object used to provide data for automated LED triggers.
+            led_driver (LEDDriver): Used to control the LED.
+            trigger (_type_): Configurations for the LEDTrigger.
+            weconnect_vehicle (WeConnectVehicle): Used to provide data for the LEDTrigger.
 
         Raises:
             e: Raised when error is detected initializing the trigger.
         """
 
+        LOG.debug(f"Initializing LEDTrigger for LEDDriver (ID: {led_driver.id})")
         self.__led_driver = led_driver
 
         try:
@@ -74,6 +81,7 @@ class LEDTrigger:
 
         except Exception as e:
             raise e
+        LOG.debug(f"Successfully initialized LEDTrigger for LEDDriver (ID: {self.__led_driver.id})")
 
     def _on_data_update(self) -> None:
         self.__led_driver._on_trigger_update(self.__get_trigger_value())
@@ -107,23 +115,24 @@ class LEDDriver:
 
     def __init__(
         self,
-        pin,
-        id,
-        default_blinker_frequency,
-        trigger=None,
+        pin: int,
+        id: str,
+        default_blinker_frequency: float,
+        trigger: dict = None,
         weconnect_vehicle: WeConnectVehicle = None,
     ) -> None:
         """
         Initializes LED.
 
         Args:
-            pin (_type_): Pin that the LED is connected to.
-            id (_type_): ID of the LED.
-            default_blinker_frequency (_type_): _description_
-            trigger (_type_, optional): _description_. Defaults to None.
-            weconnect_vehicle (WeConnectVehicle, optional): _description_. Defaults to None.
+            pin (int): Pin that the LED is connected to.
+            id (str): ID for the LED.
+            default_blinker_frequency (float): Default blinking frequency for the LED.
+            trigger (dict, optional): Configuration for the LEDTrigger. Defaults to None.
+            weconnect_vehicle (WeConnectVehicle, optional): Used to provide data for the LEDTrigger. Defaults to None.
         """
 
+        LOG.debug(f"Initializing LEDDriver (ID: {id})")
         self.__id = id
         self.__pin = pin
         GPIO.setup(self.__pin, GPIO.OUT)
@@ -145,6 +154,7 @@ class LEDDriver:
                 led_driver=self, trigger=trigger, weconnect_vehicle=weconnect_vehicle
             )
             self.__load_led_mode()
+        LOG.debug(f"Successfully initialized LEDDriver (ID: {self.__id})")
 
     @property
     def id(self):
@@ -189,6 +199,7 @@ class LEDDriver:
             self.__turn_LED_off()
 
     def blink(self, frequency=None) -> None:
+        LOG.debug(f"Starting blinker on LEDDriver (ID: {self.__id})")
         if (
             self.__state == LEDDriver.LEDState.BLINKING
             and frequency == self.__blinker_frequency
@@ -203,12 +214,14 @@ class LEDDriver:
             self.__turn_LED_on()
 
     def stop_blinking(self) -> None:
+        LOG.debug(f"Stopping blinker on LEDDriver (ID: {self.__id})")
         if self.__state != LEDDriver.LEDState.BLINKING:
             return
         with self.__operation_lock:
             self.__state = LEDDriver.LEDState.OFF
 
     def turn_on(self) -> None:
+        LOG.debug(f"Turning ON LEDDriver (ID: {self.__id})")
         if self.__state == LEDDriver.LEDState.ON:
             return
         with self.__operation_lock:
@@ -218,6 +231,7 @@ class LEDDriver:
                 self.__turn_LED_on()
 
     def turn_off(self) -> None:
+        LOG.debug(f"Turning OFF LEDDriver (ID: {self.__id})")
         if self.__state == LEDDriver.LEDState.OFF:
             return
         with self.__operation_lock:
@@ -227,10 +241,22 @@ class LEDDriver:
                 self.__turn_LED_off()
 
     def set_frequency(self, frequency) -> None:
+        LOG.debug(f"Setting default blinker frequency to {frequency} of LEDDriver (ID: {self.__id})")
         if frequency <= 0:
             raise ValueError("Frequency must be greater than zero")
         self.__blinker_frequency = frequency
 
 
-def create_led_driver(pin: int, id, default_frequency) -> LEDDriver:
+def create_led_driver(pin: int, id: str, default_frequency: float) -> LEDDriver:
+    '''
+    Create new LEDDriver without LEDTrigger
+
+    Args:
+        pin (int): Pin where the LED is connected.
+        id (str): ID for the LEDDriver.
+        default_frequency (float): Default blinker frequency for the LEDDriver.
+
+    Returns:
+        LEDDriver
+    '''
     return LEDDriver(pin=pin, id=id, default_blinker_frequency=default_frequency)

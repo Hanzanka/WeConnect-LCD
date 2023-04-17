@@ -34,7 +34,7 @@ class LCDItem:
             content_centering (bool, optional): Determines if contents of this LCDItem should be centered. Defaults to False.
         '''
         
-        LOG.debug(f"Initializing LCDItem (ID: f{id})")
+        LOG.debug(f"Initializing LCDItem (ID: {id})")
         self._id = id
         self._title = title
         self._second_title = second_title
@@ -44,10 +44,10 @@ class LCDItem:
         self._scenes = []
         self._selected = False
         self.unselect()
-        LOG.debug(f"Successfully initialized LCDItem (ID: f{self._id})")
+        LOG.debug(f"Successfully initialized LCDItem (ID: {self._id})")
 
     def update_content(self, title=None, second_title=None) -> None:
-        LOG.debug(f"Updated content of LCDItem (ID: f{self._id}) (New title: f{title}) (New second title: f{second_title})")
+        LOG.debug(f"Updated content of LCDItem (ID: {self._id}) (New title: {title}) (New second title: {second_title})")
         if title is not None:
             self._title = title
         if second_title is not None:

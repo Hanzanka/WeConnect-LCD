@@ -42,7 +42,8 @@ def load_loggers(config: dict) -> None:
         "lcd_item",
         "scene_builder",
         "lcd_message",
-        "lcd_status_bar"
+        "lcd_status_bar",
+        "spot_price_provider"
     ]
     
     for logger_name in logger_names:

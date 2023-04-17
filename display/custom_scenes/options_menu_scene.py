@@ -36,7 +36,7 @@ class OptionsMenuScene(LCDScene):
             items_selectable (bool, optional): Keep this as True. Defaults to True.
         '''
         
-        LOG.debug(f"Initializing OptionsMenuScene (ID: f{id})")
+        LOG.debug(f"Initializing OptionsMenuScene (ID: {id})")
         super().__init__(id, lcd_scene_controller, items, title, items_selectable)
 
         self.__vehicle_selection_scene = vehicle_selection_scene
@@ -81,7 +81,7 @@ class OptionsMenuScene(LCDScene):
                 target=close_app_event,
             )
         )
-        LOG.debug(f"Successfully initialized OptionsMenuScene (ID: f{self._id})")
+        LOG.debug(f"Successfully initialized OptionsMenuScene (ID: {self._id})")
 
     @property
     def next(self):

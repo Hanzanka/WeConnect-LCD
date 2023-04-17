@@ -48,7 +48,7 @@ class LCDSceneController:
             scene (LCDScene): The LCDScene which will be used as home screen.
         '''
         
-        LOG.info(f"Setting new home screen LCDScene (ID: f{scene.id})")
+        LOG.info(f"Setting new home screen LCDScene (ID: {scene.id})")
         self.__home_scene = scene
 
     def home(self) -> None:

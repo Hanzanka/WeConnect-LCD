@@ -34,7 +34,7 @@ class WeConnectLCDItem(LCDItem):
             content_centering (bool, optional): Determines if contents of this item should be centered. Defaults to False.
         '''
         
-        LOG.debug(f"Initializing WeConnectLCDItem (ID: f{id})")
+        LOG.debug(f"Initializing WeConnectLCDItem (ID: {id})")
         super().__init__(
             title=title,
             id=id,
@@ -48,7 +48,7 @@ class WeConnectLCDItem(LCDItem):
         self.__translate = translate
         self.__data_provider = data_provider
         self.__data_provider.add_callback_function(id="LCD_ITEMS", function=self.__on_data_update)
-        LOG.debug(f"Successfully initialized WeConnectLCDItem (ID: f{self._id})")
+        LOG.debug(f"Successfully initialized WeConnectLCDItem (ID: {self._id})")
 
     def __on_data_update(self) -> None:
         self.update_content(

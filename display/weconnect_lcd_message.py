@@ -9,18 +9,19 @@ LOG = logging.getLogger("lcd_message")
 def configure_auto_messages(
     config: dict, weconnect_vehicle: WeConnectVehicle, lcd_controller: LCDController
 ) -> None:
-    '''
-    Used to configure automatic messages defined in the config file.
+    """
+    Used to configure automatic messages configured in the config file.
 
     Args:
         config (dict): Dict that contains configurations for the automated messages.
-        weconnect_vehicle (WeConnectVehicle): The WeConnectVehicle-object whose properties should be used for the automated messages.
-        lcd_controller (LCDController): The LCDController-object which controls the LCD screen.
-    '''
-    
-    LOG.debug("Initializing WeConnectLCDMessages")
+        weconnect_vehicle (WeConnectVehicle): Used to provide data for the WeConnectLCDMessages and trigger them.
+        lcd_controller (LCDController): Used to display messages on the LCD screen.
+    """
+
+    LOG.debug("Initializing automated WeConnectLCDMessages")
     for message_config in config["automated messages"]:
         WeConnectLCDMessage(message_config, weconnect_vehicle, lcd_controller)
+    LOG.debug("Successfully initialized automated WeConnectLCDMessages")
 
 
 class WeConnectLCDMessage:
@@ -30,17 +31,20 @@ class WeConnectLCDMessage:
         weconnect_vehicle: WeConnectVehicle,
         lcd_controller: LCDController,
     ) -> None:
-        '''
-        Used to generate new automated message.
+        """
+        Used to generate new automated WeConnectLCDMessage.
 
         Args:
             message_config (dict): Dict that contains configuration for the message
-            weconnect_vehicle (WeConnectVehicle): The WeConnectVehicle-object whose properties should be used for the automated messages.
-            lcd_controller (LCDController): The LCDController-object which controls the LCD screen.
-        '''
-        
+            weconnect_vehicle (WeConnectVehicle): Used to provide data for the WeConnectLCDMessage and trigger it.
+            lcd_controller (LCDController): Used to display the WeConnectLCDMessage.
+        """
+
+        LOG.debug(
+            f"Initializing WeConnectLCDMessage (ID: {message_config['id']}) "
+            f"(WeConnectVehicleDataProperty ID: {weconnect_vehicle.get_data_property(message_config['data provider id']).id})"
+        )
         self.__id = message_config["id"]
-        LOG.debug(f"Initializing WeConnectLCDMessage (ID: {self.__id})")
         self.__lcd_controller = lcd_controller
         self.__selective_messages = "trigger" in message_config
         if self.__selective_messages:
@@ -51,7 +55,10 @@ class WeConnectLCDMessage:
         self.__data_provider = weconnect_vehicle.get_data_property(
             message_config["data provider id"]
         )
-        self.__data_provider.add_callback_function(id="MESSAGE", function=self.__on_data_update)
+        self.__data_provider.add_callback_function(
+            id="MESSAGE", function=self.__on_data_update
+        )
+        LOG.debug(f"Successfully initialized WeConnectLCDMessage (ID: {self.__id})")
 
     def __on_data_update(self) -> None:
         value = self.__data_provider.custom_value_format(
@@ -66,7 +73,7 @@ class WeConnectLCDMessage:
     def __display_message(self, value) -> None:
         message_content = self.__message_base.replace("{value}", value)
         LOG.debug(
-            f"Queueing WeConnectLCDMessage (ID: {self.__id}) with content ({message_content})"
+            f"Queueing WeConnectLCDMessage (ID: {self.__id}) (Content: {message_content})"
         )
         self.__lcd_controller.display_message(
             message=message_content,
