@@ -1,3 +1,9 @@
+import logging
+
+
+LOG = logging.getLogger("lcd_scene")
+
+
 class LCDScene:
     def __init__(
         self,
@@ -8,16 +14,17 @@ class LCDScene:
         items_selectable: bool = True,
     ) -> None:
         '''
-        _summary_
+        Used to organize the LCDItems on the screen.
 
         Args:
-            id (str): ID of the scene.
-            lcd_scene_controller (None): LCDSceneController-object used to control the scenes of the LCD screen.
-            items (list, optional): List containing items for the scene. Defaults to None.
-            title (str, optional): Title for the scene. Title is always visible on the top line of the LCD screen. Defaults to None.
-            items_selectable (bool, optional): If items of the scene should be interactable. Defaults to True.
+            id (str): ID for the LCDScene.
+            lcd_scene_controller (None): Used to control the LCDScene.
+            items (list, optional): List containing the LCDItems for the LCDScene. Defaults to None.
+            title (str, optional): Title for the LCDScene. Title is always visible on the top line of the LCD screen. Defaults to None.
+            items_selectable (bool, optional): If LCDItems of the LCDScene should be interactable. Defaults to True.
         '''
         
+        LOG.debug(f"Initializing LCDScene (ID: f{id})")
         self._id = id
         self._lcd_scene_controller = lcd_scene_controller
 
@@ -32,6 +39,7 @@ class LCDScene:
         self.__startpoint = 0
         self.__endpoint = 4 if self.__title is None else 3
         self._selected_index = 0
+        LOG.debug(f"Successfully initialized LCDScene (ID: f{self._id})")
 
     @property
     def id(self):
@@ -62,11 +70,13 @@ class LCDScene:
         lcd_item.add_scene(self)
 
     def load(self) -> None:
+        LOG.debug(f"Loading LCDScene (ID: f{self._id})")
         if self.__items_selectable:
             self.__select_item()
         self.update()
 
     def exit(self) -> None:
+        LOG.debug(f"Exiting LCDScene (ID: f{self.id})")
         if self.__items_selectable:
             self.__unselect_item()
 

@@ -25,20 +25,22 @@ class PushButton:
         long_press_args: list = None
     ) -> None:
         '''
-        Initializes physical button backend functionality.
+        Initializes physical button backend functionality. Buttons are disabled by default.
 
         Args:
-            pin (int): Pin that the button is connected to.
-            id (_type_): ID of the button.
+            pin (int): Pin where the button is connected to.
+            id (_type_): ID for the button.
             click_callback (callable): Function ran when the button is clicked.
             click_args (list, optional): Arguments for the function ran when the button is clicked. Defaults to None.
             long_press_callback (callable, optional): Function ran when button is pressed down. Defaults to None.
-            long_press_time (float, optional): Time when the button detects it is pressed down. Defaults to None.
+            long_press_time (float, optional): Time when the button detects it is pressed down. Must be equal or greater than 1. Defaults to None.
             long_press_args (list, optional): Arguments for the function ran when the button is pressed down. Defaults to None.
 
         Raises:
             ValueError: Raised if long press time is below one second.
         '''
+        
+        LOG.debug(f"Initializing button (ID: {id})")
         
         self.__id = id
         self.__pin = pin
@@ -60,6 +62,8 @@ class PushButton:
         self.__button_event = Event()
 
         GPIO.setup(self.__pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        
+        LOG.debug(f"Successfully initialized button (ID: {self.__id})")
 
     def enable(self) -> None:
         '''

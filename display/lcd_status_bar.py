@@ -3,10 +3,14 @@ from typing import TYPE_CHECKING
 from weconnect.elements.plug_status import PlugStatus
 from weconnect.elements.charging_status import ChargingStatus
 from weconnect.elements.climatization_status import ClimatizationStatus
+import logging
 
 if TYPE_CHECKING:
     from weconnect_id.vehicle import WeConnectVehicle
     from display.lcd_scene_controller import LCDSceneController
+
+
+LOG = logging.getLogger("lcd_status_bar")
 
 
 class LCDStatusBar:
@@ -16,13 +20,14 @@ class LCDStatusBar:
         lcd_scene_controller: LCDSceneController,
     ) -> None:
         '''
-        Displays icons on top of the LCD screen when scene with title is displayed.
+        Displays icons on top of the LCD screen when LCDScene with title is displayed.
 
         Args:
-            weconnect_vehicle (WeConnectVehicle): The WeConnectVehicle-object whose data is used to generate the icons.
-            lcd_scene_controller (LCDSceneController): The LCDSceneController-object which controls the scenes on the LCD screen.
+            weconnect_vehicle (WeConnectVehicle): Provides data about the selected vehicle for the LCDStatusBar.
+            lcd_scene_controller (LCDSceneController): Used to update the icons displayed on the LCD screen.
         '''
         
+        LOG.debug("Initializing LCDStatusBar")
         self.__weconnect_vehicle = weconnect_vehicle
         self.__lcd_scene_controller = lcd_scene_controller
 
@@ -64,6 +69,7 @@ class LCDStatusBar:
         self.__update_battery_icon()
         self.__update_charging_icon()
         self.__update_climate_icon()
+        LOG.debug("Successfully initialized LCDStatusBar")
 
     @property
     def icons(self) -> list:
@@ -86,6 +92,7 @@ class LCDStatusBar:
         else:
             self.__battery_icon = self.__battery_empty
         self.__lcd_scene_controller.update_status_bar()
+        LOG.debug(f"Updated the battery icon of the LCDStatusBar to (Icon: f{self.__battery_icon})")
 
     def __update_charging_icon(self) -> None:
         charging_status = self.__weconnect_vehicle.get_data_property(
@@ -95,6 +102,7 @@ class LCDStatusBar:
         if charging_status == ChargingStatus.ChargingState.CHARGING:
             self.__charging_icon = self.__charging
             self.__lcd_scene_controller.update_status_bar()
+            LOG.debug(f"Updated the charging icon of the LCDStatusBar to (Icon: f{self.__charging_icon})")
             return
 
         plug_status = self.__weconnect_vehicle.get_data_property(
@@ -108,15 +116,18 @@ class LCDStatusBar:
         if battery_level >= target_battery_level and plug_status == PlugStatus.PlugConnectionState.CONNECTED:
             self.__charging_icon = self.__charge_complete
             self.__lcd_scene_controller.update_status_bar()
+            LOG.debug(f"Updated the charging icon of the LCDStatusBar to (Icon: f{self.__charging_icon})")
             return
 
         if plug_status == PlugStatus.PlugConnectionState.CONNECTED:
             self.__charging_icon = self.__plug_connected
             self.__lcd_scene_controller.update_status_bar()
+            LOG.debug(f"Updated the charging icon of the LCDStatusBar to (Icon: f{self.__charging_icon})")
             return
 
         self.__charging_icon = None
         self.__lcd_scene_controller.update_status_bar()
+        LOG.debug(f"Updated the charging icon of the LCDStatusBar to (Icon: f{self.__charging_icon})")
 
     def __update_climate_icon(self) -> None:
         climate_state = self.__weconnect_vehicle.get_data_property(
@@ -127,3 +138,4 @@ class LCDStatusBar:
         else:
             self.__climate_icon = None
         self.__lcd_scene_controller.update_status_bar()
+        LOG.debug(f"Updated the climate icon of the LCDStatusBar to (Icon: f{self.__climate_icon})")

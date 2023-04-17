@@ -2,6 +2,10 @@ from display.lcd_scene import LCDScene
 from display.lcd_item import LCDItem
 from weconnect_id.tools.updater import WeConnectUpdater
 from weconnect_id.tools.vehicle_loader import WeConnectVehicleLoader
+import logging
+
+
+LOG = logging.getLogger("lcd_scene")
 
 
 class VehicleSelectionScene(LCDScene):
@@ -16,18 +20,19 @@ class VehicleSelectionScene(LCDScene):
         items_selectable: bool = True
     ) -> None:
         '''
-        Selects the vehicle used to display data.
+        Used to switch between vehicles.
 
         Args:
-            id (str): ID of the scene.
-            lcd_scene_controller (_type_): LCDSceneController-object used to control the scenes of the LCD screen.
-            weconnect_updater (WeConnectUpdater): WeConnectUpdater-object which is used to update data.
-            weconnect_vehicle_loader (WeConnectVehicleLoader): WeConnectVehicleLoader-object which is used to load items for the specified vehicle.
+            id (str): ID for the LCDScene.
+            lcd_scene_controller (_type_): Used to control the LCDScene.
+            weconnect_updater (WeConnectUpdater): Used to access the WeConnect-API object.
+            weconnect_vehicle_loader (WeConnectVehicleLoader): Used to load the selected vehicle into the system.
             items (list, optional): Keep as None. Defaults to None.
-            title (str, optional): Title for the scene. Defaults to None.
+            title (str, optional): Title for the LCDScene. Defaults to None.
             items_selectable (bool, optional): Keep as True. Defaults to True.
         '''
         
+        LOG.debug(f"Initializing VehicleSelectionScene (ID: f{id})")
         super().__init__(id, lcd_scene_controller, items, title, items_selectable)
 
         self.__weconnect_vehicle_loader = weconnect_vehicle_loader
@@ -43,6 +48,7 @@ class VehicleSelectionScene(LCDScene):
                     target_args=[vin],
                 )
             )
+        LOG.debug(f"Successfully initialized VehicleSelectionScene (ID: f{self._Id})")
 
     def __select_vehicle(self, vin: str) -> None:
         self.__weconnect_vehicle_loader.load_vehicle_dependent_items(

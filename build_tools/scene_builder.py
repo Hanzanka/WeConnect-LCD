@@ -10,6 +10,10 @@ from display.custom_scenes.climate_controller_temperature_scene import (
 from weconnect_id.tools.updater import WeConnectUpdater
 from weconnect.domain import Domain
 from electricity_price.spot_price_provider import SpotPriceProvider
+import logging
+
+
+LOG = logging.getLogger("scene_builder")
 
 
 class SceneBuilder:
@@ -24,10 +28,10 @@ class SceneBuilder:
         Builds the scenes used in the user interface.
 
         Args:
-            config (dict): App configuration file.
-            weconnect_updater (WeConnectUpdater): WeConnectUpdater-object used to update the app data.
-            lcd_scene_controller (LCDSceneController): LCDSceneController-object used to control the scenes of the LCD screen.
-            spot_price_provider (SpotPriceProvider): SpotPriceProvider-object that provides electricity prices.
+            config (dict): Contains configurations for the created LCDItems and LCDScenes.
+            weconnect_updater (WeConnectUpdater): Needed to initialize WeConnectLCDItems.
+            lcd_scene_controller (LCDSceneController): Needed to initialize LCDScenes.
+            spot_price_provider (SpotPriceProvider): Provides data to the electricity price items.
         '''
         
         self.__config = config
@@ -42,11 +46,13 @@ class SceneBuilder:
         Builds the scenes for the user interface.
 
         Args:
-            weconnect_vehicle (WeConnectVehicle): WeConnectVehicle-object whose data is used in the items generated.
+            weconnect_vehicle (WeConnectVehicle): Provides necessary objects and functions for the WeConnectLCDItems and some LCDScenes.
 
         Returns:
-            dict: Returns dict where scenes are stored in id - scene pairs.
+            dict: Returns dict where scenes are stored in ID - LCDScene pairs.
         '''
+        
+        LOG.debug(f"Loading LCDScenes. Selected vehicle: ({weconnect_vehicle.nickname})")
         
         custom_scenes = {
             "climate temperature": ClimateControllerTemperatureScene(
@@ -125,4 +131,6 @@ class SceneBuilder:
         )
         self.__lcd_scene_controller.set_status_bar(lcd_status_bar)
 
+        LOG.debug("Successfully loaded LCDScenes")
+        
         return scenes

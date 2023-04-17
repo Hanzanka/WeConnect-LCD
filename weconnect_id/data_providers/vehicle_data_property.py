@@ -124,7 +124,6 @@ class WeConnectVehicleDataProperty:
             return "Error"
 
     def __update_value(self, element, flags) -> None:
-        LOG.debug(f"Updating WeconnectVehicleDataProperty (ID: {self._id}) value")
         self._value = element.value
         self._value_string = str(
             self._value.value if isinstance(self._value, Enum) else self._value
@@ -174,9 +173,6 @@ class WeConnectVehicleDataProperty:
         if not self.__logging_enabled:
             return
         try:
-            LOG.debug(
-                f"Logging data from WeconnectVehicleDataProperty (ID: {self._id})"
-            )
             log_data(self)
         except WeConnectLoggerError as e:
             LOG.exception(e)
@@ -195,7 +191,7 @@ class WeConnectVehicleDataProperty:
             )
             self.__translations = translations
 
-    def enable_logging(self, path: str) -> None:
+    def set_logging(self, logging_enabled: bool, path: str) -> None:
         """
         Used to enable logging for the data property values.
 
@@ -204,9 +200,12 @@ class WeConnectVehicleDataProperty:
         """
 
         LOG.debug(
-            f"Enabled logging on WeconnectVehicleDataProperty (ID: {self._id}), logs will be saved to '{path}'"
+            (
+                f"Setting logging status to {logging_enabled} on WeconnectVehicleDataProperty (ID: {self._id})"
+                f"{', logs will be saved to {path}' if logging_enabled else ''}"
+            )
         )
-        self.__logging_enabled = True
+        self.__logging_enabled = logging_enabled
         self.__logger_path = path
         self.log()
 
@@ -263,9 +262,6 @@ class CalculatedWeConnectVehicleDataProperty(WeConnectVehicleDataProperty):
         self._date_updated = datetime.now().date().strftime("%d.%m.%Y")
 
     def __update_value(self, element, flags) -> None:
-        LOG.debug(
-            f"Updating CalculatedWeConnectVehicleDataProperty (ID: {self._id}) value"
-        )
         calculation = self.__formula(element.value)
         self._value = calculation
         self._value_string = str(calculation)

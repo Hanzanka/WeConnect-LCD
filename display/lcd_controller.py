@@ -9,7 +9,15 @@ LOG = logging.getLogger("lcd_controller")
 
 
 class LCDController:
+    
     def __init__(self, lcd_scene_controller) -> None:
+        '''
+        Used to control the LCD screen.
+
+        Args:
+            lcd_scene_controller (_type_): Used to restore the view which was on the screen before displaying message.
+        '''
+        
         self.__lcd = CharLCD(
             i2c_expander="PCF8574", address=0x27, port=1, charmap="A00", cols=20, rows=4
         )
@@ -38,7 +46,7 @@ class LCDController:
 
     def update_lcd(self, content: list) -> None:
         """
-        Used to update content of the LCD screen
+        Used to update the content of the LCD screen
 
         Args:
             content (list): List containing contents for each line on the LCD screen.
@@ -144,6 +152,7 @@ class LCDController:
                 Defaults to None.
         """
 
+        LOG.debug(f"New message queued (Content: f{message})")
         if not self.__message_on_screen:
             self.backlight_on()
             with self.__print_lock:

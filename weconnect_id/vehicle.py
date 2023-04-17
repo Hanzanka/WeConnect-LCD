@@ -32,6 +32,7 @@ class WeConnectVehicle:
             config (dict): Provides configurations for WeConnectVehicleDataProperties.
         '''
         
+        LOG.debug(f"Initializing WeConnectVehicle (Vehicle: {vehicle.nickname})")
         self.__import_vehicle_properties(vehicle=vehicle)
         self.__api_vehicle.enableTracker()
 
@@ -61,6 +62,7 @@ class WeConnectVehicle:
             weconnect_vehicle_loader (WeConnectVehicleLoader): Used in ClimateController setup.
         '''
         
+        LOG.debug(f"Setting up climate controller (Vehicle: {self.nickname})")
         self.__climate_controller = ClimateController(
             weconnect_vehicle=self,
             weconnect_updater=weconnect_updater,
@@ -69,13 +71,16 @@ class WeConnectVehicle:
         )
 
     def __import_vehicle_properties(self, vehicle: Vehicle) -> None:
+        LOG.debug(f"Importing vehicle properties (Vehicle: {vehicle.nickname})")
         self.__api_vehicle = vehicle
         self.__brand = self.CAR_BRANDS[vehicle.devicePlatform.value.value]
         self.__model = vehicle.model
         self.__vin = vehicle.vin
         self.__brand_code = vehicle.brandCode
+        self.__nickname = vehicle.nickname
 
     def __import_vehicle_data(self) -> None:
+        LOG.debug(f"Importing vehicle data (Vehicle: {self.nickname})")
         self.__data = {}
         self.__data.update(self.__battery_data_provider.get_data())
         self.__data.update(self.__climatisation_data_provider.get_data())
@@ -87,7 +92,7 @@ class WeConnectVehicle:
 
     def __setup_data_property_loggers(self, config: dict) -> None:
         for data_id in config["log data"]:
-            self.__data[data_id].enable_logging((config["paths"]["data_logs"]))
+            self.__data[data_id].set_logging(True, config["paths"]["data_logs"])
 
     def start_climate_control(self) -> None:
         '''
@@ -162,6 +167,10 @@ class WeConnectVehicle:
     @property
     def api_vehicle(self) -> Vehicle:
         return self.__api_vehicle
+
+    @property
+    def nickname(self) -> str:
+        return self.__nickname
 
     @property
     def vin(self) -> str:

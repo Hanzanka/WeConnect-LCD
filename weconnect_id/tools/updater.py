@@ -27,6 +27,7 @@ class WeConnectUpdater:
             config (dict): Configuration dict for the updater.
         '''
         
+        LOG.debug("Initializing WeConnectUpdater")
         self.__weconnect = weconnect
         self.__update_led = create_led_driver(
             pin=config["pin layout"]["led updater"],
@@ -46,6 +47,7 @@ class WeConnectUpdater:
         self.__start_total_update_scheduler()
 
     def add_scheduler(self, id: str, domains: list, interval: int, silent: bool) -> None:
+        LOG.debug(f"Adding WeConnectUpdater scheduler (ID: {id})")
         try:
             self.__scheduler.add_job(
                 id=id,
@@ -55,16 +57,20 @@ class WeConnectUpdater:
                 seconds=interval,
             )
         except ConflictingIdError as e:
+            LOG.exception(f"WeConnectUpdater scheduler with (ID: {id}) already exists")
             raise e
         self.update(domains=domains, silent=silent)
 
     def remove_scheduler(self, id: str) -> None:
+        LOG.debug(f"Removing WeConnectUpdater scheduler (ID: {id})")
         try:
             self.__scheduler.remove_job(job_id=id)
         except KeyError as e:
+            LOG.exception(f"WeConnectUpdater scheduler (ID: {id}) doesn't exist")
             raise e
 
     def update(self, domains: list, silent: bool = False) -> None:
+        LOG.debug(f"Updating WeConnect data (Domains: {domains})")
         if not silent:
             self.__update_led.blink()
 

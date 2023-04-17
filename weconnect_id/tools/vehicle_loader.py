@@ -33,6 +33,7 @@ class WeConnectVehicleLoader:
             scene_builder (SceneBuilder): Used to build new scenes.
         '''
         
+        LOG.debug("Initializing WeConnectVehicleLoader")
         self.__lcd_scene_controller = lcd_scene_controller
         self.__lcd_controller = lcd_scene_controller.lcd_controller
         self.__vehicle_change_allowed = True
@@ -42,6 +43,7 @@ class WeConnectVehicleLoader:
         self.__scene_builder = scene_builder
 
     def load_vehicle_dependent_items(self, vin: str) -> None:
+        LOG.debug(f"Loading vehicle dependent items (Vehicle VIN: {vin})")
         self.__lcd_controller.display_message("Importing Vehicle Data")
         for vehicle_vin, vehicle in self.__weconnect.vehicles.items():
             if vehicle_vin == vin:
@@ -88,7 +90,9 @@ class WeConnectVehicleLoader:
         return self.__vehicle_change_allowed
 
     def disable_vehicle_change(self) -> None:
+        LOG.info("Disabled vehicle changing")
         self.__vehicle_change_allowed = False
 
     def enable_vehicle_change(self) -> bool:
+        LOG.info("Enabling vehicle changing")
         self.__vehicle_change_allowed = True

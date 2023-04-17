@@ -2,17 +2,22 @@ from weconnect_id.data_providers.vehicle_data_property import (
     WeConnectVehicleDataProperty,
 )
 from display.lcd_item import LCDItem
+from typing import Any
+import logging
+
+
+LOG = logging.getLogger("lcd_item")
 
 
 class WeConnectLCDItem(LCDItem):
     def __init__(
         self,
         data_provider: WeConnectVehicleDataProperty,
-        title,
-        id,
-        translate=None,
+        title: Any,
+        id: str,
+        translate: bool = None,
         target=None,
-        target_args=None,
+        target_args: list = None,
         content_centering=False,
     ) -> None:
         '''
@@ -20,15 +25,16 @@ class WeConnectLCDItem(LCDItem):
         This class is used to display vehicle data.
 
         Args:
-            data_provider (WeConnectVehicleDataProperty): Determines which property data of the vehicle the item displays.
-            title (_type_): Sets the title of the item.
-            id (_type_): Sets the id of the item.
-            translate (_type_, optional): Determines if translations should be applied to displayed data. Defaults to None.
-            target (_type_, optional): Determines if scene should be opened or function be ran when pressing enter on this item. Defaults to None.
-            target_args (_type_, optional): Arguments for the function ran when pressing enter on this item. Defaults to None.
+            data_provider (WeConnectVehicleDataProperty): Used to provide data for the WeConnectLCDItem.
+            title (Any): Title for the LCDItem.
+            id (str): ID for the LCDItem.
+            translate (bool, optional): Enables or disables translations for the WeConnectLCDItem. Defaults to None.
+            target (LCDScene or callable, optional): Determines if scene should be opened or function be ran when pressing enter on this item. Defaults to None.
+            target_args (list, optional): Arguments for the function ran when pressing enter on this item. Defaults to None.
             content_centering (bool, optional): Determines if contents of this item should be centered. Defaults to False.
         '''
         
+        LOG.debug(f"Initializing WeConnectLCDItem (ID: f{id})")
         super().__init__(
             title=title,
             id=id,
@@ -42,6 +48,7 @@ class WeConnectLCDItem(LCDItem):
         self.__translate = translate
         self.__data_provider = data_provider
         self.__data_provider.add_callback_function(id="LCD_ITEMS", function=self.__on_data_update)
+        LOG.debug(f"Successfully initialized WeConnectLCDItem (ID: f{self._id})")
 
     def __on_data_update(self) -> None:
         self.update_content(

@@ -2,6 +2,10 @@ import os
 from threading import Event
 from display.lcd_scene import LCDScene
 from display.lcd_item import LCDItem
+import logging
+
+
+LOG = logging.getLogger("lcd_scene")
 
 
 class OptionsMenuScene(LCDScene):
@@ -23,15 +27,16 @@ class OptionsMenuScene(LCDScene):
             Closing the app.
 
         Args:
-            id (str): ID for the scene.
-            lcd_scene_controller (_type_): LCDSceneController-object used to control the scenes of the LCD screen.
-            vehicle_selection_scene (LCDScene): Scene that is used to select used vehicle.
+            id (str): ID for the LCDScene.
+            lcd_scene_controller (_type_): Used to control the LCDScene.
+            vehicle_selection_scene (LCDScene): Used to select vehicles.
             close_app_event (Event): Event which prevents the main thread for exiting.
             items (list, optional): Keep this as None. Defaults to None.
-            title (str, optional): Title for the scene. Defaults to None.
+            title (str, optional): Title for the LCDScene. Defaults to None.
             items_selectable (bool, optional): Keep this as True. Defaults to True.
         '''
         
+        LOG.debug(f"Initializing OptionsMenuScene (ID: f{id})")
         super().__init__(id, lcd_scene_controller, items, title, items_selectable)
 
         self.__vehicle_selection_scene = vehicle_selection_scene
@@ -76,6 +81,7 @@ class OptionsMenuScene(LCDScene):
                 target=close_app_event,
             )
         )
+        LOG.debug(f"Successfully initialized OptionsMenuScene (ID: f{self._id})")
 
     @property
     def next(self):

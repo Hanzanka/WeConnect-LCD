@@ -10,6 +10,10 @@ from weconnect_id.data_providers.vehicle_data_property import (
     CalculatedWeConnectVehicleDataProperty,
     WeConnectVehicleDataProperty,
 )
+import logging
+
+
+LOG = logging.getLogger("data_properties")
 
 
 class WeConnectBatteryData(WeConnectVehicleData):
@@ -25,6 +29,7 @@ class WeConnectBatteryData(WeConnectVehicleData):
         self.__import_data()
 
     def __import_data(self) -> None:
+        LOG.debug(f"Importing battery data (Vehicle: {self._vehicle.nickname})")
         battery_data = self._vehicle.domains["charging"]
         self._data.update(self.__get_battery_status(battery_data["batteryStatus"]))
         self._data.update(self.__get_charging_status(battery_data["chargingStatus"]))
@@ -32,6 +37,7 @@ class WeConnectBatteryData(WeConnectVehicleData):
         self._data.update(self.__get_plug_status(battery_data["plugStatus"]))
 
     def __get_battery_status(self, battery_status: BatteryStatus) -> dict:
+        LOG.debug(f"Importing battery status data (Vehicle: {self._vehicle.nickname})")
         battery_status_data = {}
         weconnect_element = battery_status.currentSOC_pct
         battery_status_data[weconnect_element.getGlobalAddress()] = []
@@ -67,6 +73,7 @@ class WeConnectBatteryData(WeConnectVehicleData):
         return battery_status_data
 
     def __get_charging_status(self, charging_status: ChargingStatus) -> dict:
+        LOG.debug(f"Importing charging data (Vehicle: {self._vehicle.nickname})")
         charging_status_data = {}
         weconnect_element = charging_status.remainingChargingTimeToComplete_min
         charging_status_data[
@@ -128,6 +135,7 @@ class WeConnectBatteryData(WeConnectVehicleData):
         return charging_status_data
 
     def __get_charging_settings(self, charging_settings: ChargingSettings) -> dict:
+        LOG.debug(f"Importing charging settings data (Vehicle: {self._vehicle.nickname})")
         charging_settings_data = {}
         weconnect_element = charging_settings.maxChargeCurrentAC
         charging_settings_data[
@@ -169,6 +177,7 @@ class WeConnectBatteryData(WeConnectVehicleData):
         return charging_settings_data
 
     def __get_plug_status(self, plug_status: PlugStatus) -> dict:
+        LOG.debug(f"Importing plug status data (Vehicle: {self._vehicle.nickname})")
         plug_status_data = {}
         weconnect_element = plug_status.plugConnectionState
         plug_status_data[

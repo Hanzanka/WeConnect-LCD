@@ -2,19 +2,25 @@ from display.lcd_controller import LCDController
 from .lcd_scene import LCDScene
 from threading import Thread
 from .lcd_status_bar import LCDStatusBar
+import logging
+
+
+LOG = logging.getLogger("lcd_scene_controller")
 
 
 class LCDSceneController:
     def __init__(self) -> None:
         '''
-        Controls the scenes displayed on the LCD screen.
+        Controls the LCDScenes displayed on the LCD screen.
         '''
         
+        LOG.debug("Initializing LCDSceneController")
         self.__home_scene = None
         self.__selected_scene = None
         self.__status_bar = None
         self.__last_scenes = {}
         self.__lcd_controller = LCDController(self)
+        LOG.debug("Successfully initialized LCDSceneController")
 
     @property
     def lcd_controller(self) -> LCDController:
@@ -25,7 +31,7 @@ class LCDSceneController:
         Sets the status bar displayed on top of the LCD screen.
 
         Args:
-            status_bar (LCDStatusBar): Provides the icons for the status bar.
+            status_bar (LCDStatusBar): Provides the icons to be displayed on the LCD screen.
         '''
         
         self.__status_bar = status_bar
@@ -36,17 +42,18 @@ class LCDSceneController:
 
     def set_home_scene(self, scene: LCDScene) -> None:
         '''
-        Sets the home screen. This scene is loaded when returning from scenes that are not loaded by items.
+        Sets the home screen. This LCDScene is loaded when returning from LCDScenes that are not loaded by items.
 
         Args:
-            scene (LCDScene): The scene which will be used as homescreen.
+            scene (LCDScene): The LCDScene which will be used as home screen.
         '''
         
+        LOG.info(f"Setting new home screen LCDScene (ID: f{scene.id})")
         self.__home_scene = scene
 
     def home(self) -> None:
         '''
-        Loads the home scene.
+        Loads the home screen.
         '''
         
         self.__last_scenes.clear()

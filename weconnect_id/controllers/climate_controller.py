@@ -124,6 +124,7 @@ class ClimateController:
         self.__weconnect_vehicle_loader = weconnect_vehicle_loader
 
         self.__climate_controls = self.__vehicle.controls.climatizationControl
+        self.__climate_temperature = weconnect_vehicle.get_data_property("climate controller target temperature")
         self.__climate_state = weconnect_vehicle.get_data_property(
             "climate controller state"
         )
@@ -182,10 +183,11 @@ class ClimateController:
         Starts the climate controller
         '''
         
-        LOG.info("Requested to start climate controller")
+        LOG.info(f"Starting the climate controller (Vehicle: {self.__vehicle.nickname})")
         self.__lcd_controller.display_message(
             message="Käynnistetään Ilmastointia", time_on_screen=3
         )
+        self.__lcd_controller.display_message(message=f"Lämpötila: {self.__climate_temperature}°C")
         self.__post_request(ControlOperation.START)
 
     def stop(self) -> None:
@@ -193,7 +195,7 @@ class ClimateController:
         Stops the climate controller.
         '''
         
-        LOG.info("Requested to stop climate controller")
+        LOG.info(f"Requested to stop climate controller (Vehicle: {self.__vehicle.nickname})")
         self.__lcd_controller.display_message(
             message="Pysäytetään Ilmastointia", time_on_screen=3
         )
@@ -246,7 +248,7 @@ class ClimateController:
             except OperationAlreadyRunningError as e:
                 LOG.exception(e)
                 self.__lcd_controller.display_message(
-                    message="Toinen Pyyntö On Vireillä", time_on_screen=5
+                    message="Virhe: Ohjain On Varattu", time_on_screen=5
                 )
                 error = e
 
@@ -344,7 +346,7 @@ class ClimateController:
         if not self.__request_tracking_lock.acquire(blocking=False):
             return
 
-        LOG.debug(f"Starting tracking of request (ID: {request.requestId})")
+        LOG.debug(f"Initializing tracker on request (ID: {request.requestId})")
         self.__request = request
 
         self.__weconnect_updater.remove_scheduler(id="REQUEST FINDER")
@@ -367,7 +369,7 @@ class ClimateController:
             id="CLIMATE", domains=[Domain.CLIMATISATION], interval=15, silent=False
         )
         LOG.debug(
-            f"Successfully started tracking of request (ID: {self.__request.requestId})"
+            f"Successfully initialized tracker on request (ID: {self.__request.requestId})"
         )
 
     def __on_request_update(self, element, flags) -> None:
@@ -381,7 +383,7 @@ class ClimateController:
             self.__finish_operation(successfull=False)
 
     def __finish_operation(self, successfull: bool) -> None:
-        LOG.debug(
+        LOG.info(
             f"Finishing climate operation, operation was {'successfull' if successfull else 'not successfull'}"
         )
         self.__timeout_timer.cancel()
@@ -413,7 +415,7 @@ class ClimateController:
 
         self.__availability_status = ClimateController.AvailabilityState.AVAILABLE
         self.__weconnect_vehicle_loader.enable_vehicle_change()
-        LOG.debug(
+        LOG.info(
             f"Climate operation finished, operation was {'successfull' if successfull else 'not successfull'}"
         )
 
@@ -423,5 +425,6 @@ class ClimateController:
                 continue
 
             if request.operation.value == self.__excepted_request_operation_value:
+                LOG.debug(f"Found matching request for the operation (ID: {request.requestId})")
                 self.__track_request(request=request)
                 break

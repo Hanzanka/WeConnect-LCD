@@ -18,26 +18,26 @@ class ClimateControllerTemperatureScene(LCDScene):
         Initializes scene for changing the target temperature of the climate controller.
 
         Args:
-            id (_type_): ID for the scene.
-            lcd_scene_controller (_type_): LCDSceneController-object used to control the scenes of the LCD screen.
-            weconnect_vehicle (WeConnectVehicle): WeConnectVehicle-object where the temperature should be applied.
+            id (_type_): ID for the LCDScene.
+            lcd_scene_controller (_type_): Used to control the LCDScene.
+            weconnect_vehicle (WeConnectVehicle): Used to set the climate controller target temperature.
         '''
-        
+        LOG.debug(f"Initializing ClimateControllerTemperatureScene (ID: f{id})")
         super().__init__(id=id, lcd_scene_controller=lcd_scene_controller)
-        LOG.debug(f"Initializing ClimateControllerTemperatureScene (ID: {id})")
         self.__weconnect_vehicle = weconnect_vehicle
         self.__current_temperature = self.__weconnect_vehicle.get_data_property(
             "climate controller target temperature"
         ).value
         self.__selected_temperature = self.__current_temperature
         self.__index = self.TEMPERATURES.index(self.__selected_temperature)
+        LOG.debug(f"Successfully initialized ClimateControllerTemperatureScene (ID: f{self._id}")
 
     @property
     def content(self) -> list:
         return self._content
 
     def load(self) -> None:
-        LOG.debug(f"Loading ClimateControllerTemperatureScene (ID: {self._id})")
+        LOG.debug(f"Loading LCDScene (ID: f{self._id})")
         self.__current_temperature = self.__weconnect_vehicle.get_data_property(
             "climate controller target temperature"
         ).value
@@ -92,5 +92,4 @@ class ClimateControllerTemperatureScene(LCDScene):
         return self.__set_temperature, None
 
     def exit(self) -> None:
-        LOG.debug(f"Exiting ClimateControllerTemperatureScene (ID: {self._id})")
-        pass
+        LOG.debug(f"Exiting LCDScene (ID: {self._id})")

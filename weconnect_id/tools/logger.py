@@ -44,7 +44,7 @@ def log(data_property: WeConnectVehicleDataProperty) -> None:
             if not exists:
                 writer.writerow(("value", "time", "date"))
             LOG.debug(
-                f"Writing data from WeconnectVehicleDataProperty (ID: {data_property.id}) to (PATH: {file_path})"
+                f"Writing data from WeconnectVehicleDataProperty (ID: {data_property.id}) to (Path: {file_path})"
             )
             writer.writerow(data_property.logger_value_format)
     except Exception as e:
