@@ -1,7 +1,10 @@
-import logging
-from display.lcd_scene import LCDScene
-from weconnect_id.vehicle import WeConnectVehicle
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from display.lcd_scene import LCDScene
+    from weconnect_id.vehicle import WeConnectVehicle
 import numpy
+import logging
 
 
 LOG = logging.getLogger("lcd_scene")

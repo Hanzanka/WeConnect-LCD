@@ -1,9 +1,12 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from weconnect_id.tools.logger import (
+        log as log_data,
+        WeConnectLoggerError,
+    )
 from datetime import datetime
 import logging
-from weconnect_id.tools.logger import (
-    log as log_data,
-    WeConnectLoggerError,
-)
 from enum import Enum
 from weconnect.addressable import AddressableAttribute, AddressableLeaf
 

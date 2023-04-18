@@ -1,7 +1,10 @@
-from weconnect_id.data_providers.vehicle_data_property import (
-    WeConnectVehicleDataProperty,
-)
-from display.lcd_item import LCDItem
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from weconnect_id.data_providers.vehicle_data_property import (
+        WeConnectVehicleDataProperty,
+    )
+    from display.lcd_item import LCDItem
 from typing import Any
 import logging
 

@@ -1,7 +1,7 @@
+from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from data_providers.vehicle_data_property import WeConnectVehicleDataProperty
-
+    from weconnect_id.data_providers.vehicle_data_property import WeConnectVehicleDataProperty
 import csv
 from pathlib import Path
 import os

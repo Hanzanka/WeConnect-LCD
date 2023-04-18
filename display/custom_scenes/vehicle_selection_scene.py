@@ -1,7 +1,10 @@
-from display.lcd_scene import LCDScene
-from display.lcd_item import LCDItem
-from weconnect_id.tools.updater import WeConnectUpdater
-from weconnect_id.tools.vehicle_loader import WeConnectVehicleLoader
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from display.lcd_scene import LCDScene
+    from display.lcd_item import LCDItem
+    from weconnect_id.tools.updater import WeConnectUpdater
+    from weconnect_id.tools.vehicle_loader import WeConnectVehicleLoader
 import logging
 
 
@@ -48,7 +51,7 @@ class VehicleSelectionScene(LCDScene):
                     target_args=[vin],
                 )
             )
-        LOG.debug(f"Successfully initialized VehicleSelectionScene (ID: {self._Id})")
+        LOG.debug(f"Successfully initialized VehicleSelectionScene (ID: {self._id})")
 
     def __select_vehicle(self, vin: str) -> None:
         self.__weconnect_vehicle_loader.load_vehicle_dependent_items(

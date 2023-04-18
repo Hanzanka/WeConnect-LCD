@@ -1,11 +1,14 @@
-from weconnect_id.data_providers.vehicle_data import (
-    WeConnectVehicleData,
-)
-from weconnect.elements.vehicle import Vehicle
-from weconnect_id.data_providers.vehicle_data_property import (
-    WeConnectVehicleDataProperty,
-)
-from weconnect.elements.readiness_status import ReadinessStatus
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from weconnect_id.data_providers.vehicle_data import (
+        WeConnectVehicleData,
+    )
+    from weconnect.elements.vehicle import Vehicle
+    from weconnect_id.data_providers.vehicle_data_property import (
+        WeConnectVehicleDataProperty,
+    )
+    from weconnect.elements.readiness_status import ReadinessStatus
 import logging
 
 

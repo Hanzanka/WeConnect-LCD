@@ -1,13 +1,18 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from build_tools.loggers_configurator import load_loggers
+    from weconnect_id.tools.vehicle_loader import WeConnectVehicleLoader
+    import secret_items
 import os
-from build_tools.loggers_configurator import load_loggers
 import logging
 import json
 from threading import Event
-import secret_items
-from weconnect_id.tools.vehicle_loader import WeConnectVehicleLoader
 
 
 LOG = logging.getLogger("main")
+
+
 stop_event = Event()
 button_climate = None
 scenes = None

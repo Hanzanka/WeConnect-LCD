@@ -1,13 +1,12 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from weconnect.elements.plug_status import PlugStatus
-from weconnect.elements.charging_status import ChargingStatus
-from weconnect.elements.climatization_status import ClimatizationStatus
-import logging
-
 if TYPE_CHECKING:
+    from weconnect.elements.plug_status import PlugStatus
+    from weconnect.elements.charging_status import ChargingStatus
+    from weconnect.elements.climatization_status import ClimatizationStatus
     from weconnect_id.vehicle import WeConnectVehicle
     from display.lcd_scene_controller import LCDSceneController
+import logging
 
 
 LOG = logging.getLogger("lcd_status_bar")

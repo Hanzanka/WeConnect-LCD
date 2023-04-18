@@ -1,15 +1,18 @@
-from weconnect.elements.vehicle import Vehicle
-from weconnect.elements.battery_status import BatteryStatus
-from weconnect.elements.charging_status import ChargingStatus
-from weconnect.elements.charging_settings import ChargingSettings
-from weconnect.elements.plug_status import PlugStatus
-from weconnect_id.data_providers.vehicle_data import (
-    WeConnectVehicleData,
-)
-from weconnect_id.data_providers.vehicle_data_property import (
-    CalculatedWeConnectVehicleDataProperty,
-    WeConnectVehicleDataProperty,
-)
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from weconnect.elements.vehicle import Vehicle
+    from weconnect.elements.battery_status import BatteryStatus
+    from weconnect.elements.charging_status import ChargingStatus
+    from weconnect.elements.charging_settings import ChargingSettings
+    from weconnect.elements.plug_status import PlugStatus
+    from weconnect_id.data_providers.vehicle_data import (
+        WeConnectVehicleData,
+    )
+    from weconnect_id.data_providers.vehicle_data_property import (
+        CalculatedWeConnectVehicleDataProperty,
+        WeConnectVehicleDataProperty,
+    )
 import logging
 
 

@@ -1,7 +1,6 @@
 from enum import Enum
-from threading import Event, Lock, Timer
+from threading import Event, Lock, Timer, Thread
 import RPi.GPIO as GPIO
-from threading import Thread
 import logging
 
 

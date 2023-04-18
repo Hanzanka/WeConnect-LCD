@@ -1,13 +1,12 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from weconnect_id.vehicle import WeConnectVehicle
 from enum import Enum
 import RPi.GPIO as GPIO
 from threading import Timer, Lock
 import operator
 import logging
-
-if TYPE_CHECKING:
-    from weconnect_id.vehicle import WeConnectVehicle
 
 
 LOG = logging.getLogger("led")

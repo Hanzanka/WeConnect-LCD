@@ -1,10 +1,13 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from display.lcd_item import LCDItem
+    from display.lcd_scene import LCDScene
+    from display.lcd_scene_controller import LCDSceneController
 import urllib.request
 import json
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
-from display.lcd_item import LCDItem
-from display.lcd_scene import LCDScene
-from display.lcd_scene_controller import LCDSceneController
 import logging
 
 

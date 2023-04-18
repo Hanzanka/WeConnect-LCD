@@ -54,3 +54,4 @@ def load_loggers(config: dict) -> None:
         logger.addHandler(file_handler)
         logger.addHandler(all_logs_file_handler)
         logger.addHandler(exceptions_file_handler)
+        logger.addHandler(logging.StreamHandler())
