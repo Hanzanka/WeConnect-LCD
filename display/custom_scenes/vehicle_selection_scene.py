@@ -1,10 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from display.lcd_scene import LCDScene
-    from display.lcd_item import LCDItem
     from weconnect_id.tools.updater import WeConnectUpdater
     from weconnect_id.tools.vehicle_loader import WeConnectVehicleLoader
+from display.lcd_scene import LCDScene
+from display.lcd_item import LCDItem
 import logging
 
 

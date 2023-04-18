@@ -1,9 +1,6 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from build_tools.loggers_configurator import load_loggers
-    from weconnect_id.tools.vehicle_loader import WeConnectVehicleLoader
-    import secret_items
+from build_tools.loggers_configurator import load_loggers
+from weconnect_id.tools.vehicle_loader import WeConnectVehicleLoader
+import secret_items
 import os
 import logging
 import json

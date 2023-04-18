@@ -1,18 +1,18 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from display.lcd_scene import LCDScene
-    from display.lcd_item import LCDItem
-    from display.lcd_scene_controller import LCDSceneController
-    from display.weconnect_lcd_item import WeConnectLCDItem
-    from display.lcd_status_bar import LCDStatusBar
-    from weconnect_id.vehicle import WeConnectVehicle
-    from display.custom_scenes.climate_controller_temperature_scene import (
-        ClimateControllerTemperatureScene,
-    )
     from weconnect_id.tools.updater import WeConnectUpdater
-    from weconnect.domain import Domain
-    from electricity_price.spot_price_provider import SpotPriceProvider
+from display.lcd_scene import LCDScene
+from display.lcd_item import LCDItem
+from display.lcd_scene_controller import LCDSceneController
+from display.weconnect_lcd_item import WeConnectLCDItem
+from display.lcd_status_bar import LCDStatusBar
+from weconnect_id.vehicle import WeConnectVehicle
+from display.custom_scenes.climate_controller_temperature_scene import (
+    ClimateControllerTemperatureScene,
+)
+from electricity_price.spot_price_provider import SpotPriceProvider
+from weconnect.domain import Domain
 import logging
 
 

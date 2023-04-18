@@ -6,13 +6,13 @@ if TYPE_CHECKING:
     from weconnect.elements.charging_status import ChargingStatus
     from weconnect.elements.charging_settings import ChargingSettings
     from weconnect.elements.plug_status import PlugStatus
-    from weconnect_id.data_providers.vehicle_data import (
-        WeConnectVehicleData,
-    )
-    from weconnect_id.data_providers.vehicle_data_property import (
-        CalculatedWeConnectVehicleDataProperty,
-        WeConnectVehicleDataProperty,
-    )
+from weconnect_id.data_providers.vehicle_data import (
+    WeConnectVehicleData,
+)
+from weconnect_id.data_providers.vehicle_data_property import (
+    CalculatedWeConnectVehicleDataProperty,
+    WeConnectVehicleDataProperty,
+)
 import logging
 
 

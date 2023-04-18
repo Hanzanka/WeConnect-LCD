@@ -1,21 +1,19 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from weconnect.elements.control_operation import ControlOperation
-    from weconnect.elements.climatization_status import ClimatizationStatus
     from weconnect_id.tools.updater import WeConnectUpdater, WeConnectUpdaterError
     from display.lcd_controller import LCDController
-    from led.led_driver import create_led_driver
+    from weconnect_id.tools.vehicle_loader import WeConnectVehicleLoader
+    from weconnect_id.vehicle import WeConnectVehicle
+from led.led_driver import create_led_driver
 import logging
 from weconnect.elements.generic_status import GenericStatus
 from weconnect.domain import Domain
 from weconnect.addressable import AddressableLeaf
 from enum import Enum
 from threading import Lock, Timer
-
-if TYPE_CHECKING:
-    from weconnect_id.tools.vehicle_loader import WeConnectVehicleLoader
-    from weconnect_id.vehicle import WeConnectVehicle
+from weconnect.elements.control_operation import ControlOperation
+from weconnect.elements.climatization_status import ClimatizationStatus
 
 
 LOG = logging.getLogger("climate")

@@ -5,12 +5,12 @@ if TYPE_CHECKING:
     from weconnect.elements.climatization_status import ClimatizationStatus
     from weconnect.elements.climatization_settings import ClimatizationSettings
     from weconnect.elements.window_heating_status import WindowHeatingStatus
-    from weconnect_id.data_providers.vehicle_data import (
-        WeConnectVehicleData,
-    )
-    from weconnect_id.data_providers.vehicle_data_property import (
-        WeConnectVehicleDataProperty,
-    )
+from weconnect_id.data_providers.vehicle_data import (
+    WeConnectVehicleData,
+)
+from weconnect_id.data_providers.vehicle_data_property import (
+    WeConnectVehicleDataProperty,
+)
 import logging
 
 
