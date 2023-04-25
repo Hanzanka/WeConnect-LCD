@@ -8,6 +8,7 @@ import logging
 from display.weconnect_lcd_message import configure_auto_messages
 from build_tools.scene_builder import SceneBuilder
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from display.lcd_scene_controller import LCDSceneController
 
@@ -23,7 +24,7 @@ class WeConnectVehicleLoader:
         config: dict,
         scene_builder: SceneBuilder,
     ) -> None:
-        '''
+        """
         Used to load vehicle based items.
 
         Args:
@@ -31,8 +32,8 @@ class WeConnectVehicleLoader:
             weconnect_updater (WeConnectUpdater): Used to initialize new objects for the app.
             config (dict): Used to initialize new objects for the app.
             scene_builder (SceneBuilder): Used to build new scenes.
-        '''
-        
+        """
+
         LOG.debug("Initializing WeConnectVehicleLoader")
         self.__lcd_scene_controller = lcd_scene_controller
         self.__lcd_controller = lcd_scene_controller.lcd_controller
@@ -84,7 +85,7 @@ class WeConnectVehicleLoader:
 
         self.__lcd_scene_controller.set_home_scene(scene=scenes["scene_menu"])
         self.__lcd_scene_controller.load_scene(scene=scenes["scene_menu"])
-    
+
     @property
     def vehicle_change_allowed(self) -> bool:
         return self.__vehicle_change_allowed

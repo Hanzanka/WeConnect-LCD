@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from display.lcd_scene import LCDScene
     from display.lcd_status_bar import LCDStatusBar
+from display.lcd_scene import LCDScene
 from display.lcd_controller import LCDController
 from threading import Thread
 import logging

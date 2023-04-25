@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from weconnect_id.tools.updater import WeConnectUpdater, WeConnectUpdaterError
     from display.lcd_controller import LCDController
@@ -12,7 +13,7 @@ from weconnect.domain import Domain
 from weconnect.addressable import AddressableLeaf
 from enum import Enum
 from threading import Lock, Timer
-from weconnect.elements.control_operation import ControlOperation
+from weconnect.elements.control_operation import ControlOperation, Operation
 from weconnect.elements.climatization_status import ClimatizationStatus
 
 
@@ -73,7 +74,6 @@ class ClimateController:
         ControlOperation.START: CLIMATE_CONTROL_VALUES_ON,
         ControlOperation.STOP: CLIMATE_CONTROL_VALUES_OFF,
     }
-
     ONGOING_REQUESTS = [
         GenericStatus.Request.Status.QUEUED,
         GenericStatus.Request.Status.IN_PROGRESS,
@@ -91,6 +91,10 @@ class ClimateController:
         GenericStatus.Request.Status.POLLING_TIMEOUT,
         GenericStatus.Request.Status.TIMEOUT,
     ]
+    EXPECTED_OPERATION_VALUES = {
+        ControlOperation.STOP: Operation.STOP,
+        ControlOperation.START: Operation.START,
+    }
 
     def __init__(
         self,
@@ -99,7 +103,7 @@ class ClimateController:
         lcd_controller: LCDController,
         weconnect_vehicle_loader: WeConnectVehicleLoader,
     ) -> None:
-        '''
+        """
         Used to remotely turn on/off the climate controller and set the climate controller temperature of given vehicle.
 
         Args:
@@ -111,8 +115,8 @@ class ClimateController:
 
         Raises:
             ClimateControllerCompatibilityError: Raised if vehicle is not compatible with remote climate controls.
-        '''
-        
+        """
+
         self.__vehicle = weconnect_vehicle.api_vehicle
         self.__weconnect_updater = weconnect_updater
         self.__operation_led = create_led_driver(
@@ -122,7 +126,9 @@ class ClimateController:
         self.__weconnect_vehicle_loader = weconnect_vehicle_loader
 
         self.__climate_controls = self.__vehicle.controls.climatizationControl
-        self.__climate_temperature = weconnect_vehicle.get_data_property("climate controller target temperature")
+        self.__climate_temperature = weconnect_vehicle.get_data_property(
+            "climate controller target temperature"
+        )
         self.__climate_state = weconnect_vehicle.get_data_property(
             "climate controller state"
         )
@@ -151,13 +157,13 @@ class ClimateController:
 
     @property
     def availability_status(self) -> AvailabilityState:
-        '''
+        """
         Used to check climate controller's availability status.
 
         Returns:
             AvailabilityState: Availability status of the climate controller.
-        '''
-        
+        """
+
         return self.__availability_status
 
     @property
@@ -165,10 +171,10 @@ class ClimateController:
         return self.__climate_state
 
     def switch(self) -> None:
-        '''
+        """
         Switches the climate controller state.
-        '''
-        
+        """
+
         LOG.info("Requested to switch climate controller state")
         self.__weconnect_updater.update(domains=[Domain.CLIMATISATION], silent=False)
         if self.__climate_state.value in self.CLIMATE_CONTROL_VALUES_OFF:
@@ -177,30 +183,36 @@ class ClimateController:
             self.stop()
 
     def start(self) -> None:
-        '''
+        """
         Starts the climate controller
-        '''
-        
-        LOG.info(f"Starting the climate controller (Vehicle: {self.__vehicle.nickname})")
+        """
+
+        LOG.info(
+            f"Starting the climate controller (Vehicle: {self.__vehicle.nickname})"
+        )
         self.__lcd_controller.display_message(
             message="Käynnistetään Ilmastointia", time_on_screen=3
         )
-        self.__lcd_controller.display_message(message=f"Lämpötila: {self.__climate_temperature}°C")
+        self.__lcd_controller.display_message(
+            message=f"Lämpötila: {self.__climate_temperature}°C", time_on_screen=3
+        )
         self.__post_request(ControlOperation.START)
 
     def stop(self) -> None:
-        '''
+        """
         Stops the climate controller.
-        '''
-        
-        LOG.info(f"Requested to stop climate controller (Vehicle: {self.__vehicle.nickname})")
+        """
+
+        LOG.info(
+            f"Requested to stop climate controller (Vehicle: {self.__vehicle.nickname})"
+        )
         self.__lcd_controller.display_message(
             message="Pysäytetään Ilmastointia", time_on_screen=3
         )
         self.__post_request(ControlOperation.STOP)
 
     def set_temperature(self, temperature: float) -> None:
-        '''
+        """
         Sets the climate controller temperature.
 
         Args:
@@ -210,8 +222,8 @@ class ClimateController:
         Raises:
             TemperatureOutOfRangeError: Raised if given temperature is out of range of 15.5 - 30°C.
             FailedToSetTemperatureError: Raised if unknown error occurs.
-        '''
-        
+        """
+
         LOG.info(
             f"Requested to change climate controller target temperature to {temperature}°C"
         )
@@ -310,7 +322,9 @@ class ClimateController:
 
         self.__weconnect_updater.update(domains=[Domain.CLIMATISATION], silent=False)
 
-        if not (self.__climate_state not in self.DISALLOWED_CLIMATE_STATES[operation]):
+        if not (
+            self.__climate_state.value not in self.DISALLOWED_CLIMATE_STATES[operation]
+        ):
             raise ClimateControllerAlreadyInRequestedStateError(
                 f"Climate controller is already in requested state of {self.__climate_state}"
             )
@@ -324,7 +338,9 @@ class ClimateController:
             priority=AddressableLeaf.ObserverPriority.INTERNAL_FIRST,
         )
 
-        self.__excepted_request_operation_value = operation
+        self.__excepted_request_operation_value = self.EXPECTED_OPERATION_VALUES[
+            operation
+        ]
         self.__climate_controls.value = operation
 
         self.__weconnect_updater.add_scheduler(
@@ -353,7 +369,7 @@ class ClimateController:
             flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
         )
 
-        if self.__request.operation.value == ControlOperation.START:
+        if self.__request.operation.value == Operation.START:
             self.__operation_led.turn_on()
         else:
             self.__operation_led.blink(frequency=2)
@@ -386,11 +402,16 @@ class ClimateController:
         )
         self.__timeout_timer.cancel()
 
-        self.__request.status.removeObserver(
-            observer=self.__on_request_update,
-            flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
-        )
+        if self.__request is not None:
+            self.__request.status.removeObserver(
+                observer=self.__on_request_update,
+                flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
+            )
+        else:
+            self.__weconnect_updater.remove_scheduler(id="REQUEST FINDER")
+
         self.__weconnect_updater.remove_scheduler(id="CLIMATE")
+
         if self.__request is None:
             self.__climate_requests.removeObserver(
                 observer=self.__on_requests_update,
@@ -423,6 +444,8 @@ class ClimateController:
                 continue
 
             if request.operation.value == self.__excepted_request_operation_value:
-                LOG.debug(f"Found matching request for the operation (ID: {request.requestId})")
+                LOG.debug(
+                    f"Found matching request for the operation (ID: {request.requestId})"
+                )
                 self.__track_request(request=request)
                 break
