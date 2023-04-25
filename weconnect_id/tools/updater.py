@@ -31,7 +31,7 @@ class WeConnectUpdater:
         self.__weconnect = weconnect
         self.__update_led = create_led_driver(
             pin=config["pin layout"]["led updater"],
-            id="WECONNECT UPDATE",
+            id="WECONNECT_UPDATE",
             default_frequency=10,
         )
 
@@ -96,7 +96,7 @@ class WeConnectUpdater:
 
     def __start_main_update_scheduler(self) -> None:
         self.__scheduler.add_job(
-            id="MAIN UPDATE SCHEDULER",
+            id="MAIN_UPDATE_SCHEDULER",
             func=self.update,
             args=[self.DOMAINS, self.__silent_main_update],
             trigger="interval",

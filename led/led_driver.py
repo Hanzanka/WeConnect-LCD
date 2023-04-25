@@ -75,7 +75,7 @@ class LEDTrigger:
                 trigger["data id"]
             )
             self.__data_provider.add_callback_function(
-                id="LED", function=self._on_data_update
+                id=self.__led_driver.id, function=self._on_data_update
             )
 
         except Exception as e:
@@ -156,7 +156,7 @@ class LEDDriver:
         LOG.debug(f"Successfully initialized LEDDriver (ID: {self.__id})")
 
     @property
-    def id(self):
+    def id(self) -> str:
         return self.__id
 
     @property

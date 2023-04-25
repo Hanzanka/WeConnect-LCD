@@ -58,30 +58,30 @@ class SceneBuilder:
         LOG.debug(f"Loading LCDScenes. Selected vehicle: ({weconnect_vehicle.nickname})")
         
         custom_scenes = {
-            "climate temperature": ClimateControllerTemperatureScene(
+            "SCENE_CLIMATE_SETTINGS": ClimateControllerTemperatureScene(
                 lcd_scene_controller=self.__lcd_scene_controller,
-                id="climate settings",
+                id="SCENE_CLIMATE_SETTINGS",
                 weconnect_vehicle=weconnect_vehicle,
             )
         }
         custom_items = {
-            "climate controller starter": LCDItem(
+            "ITEM_CLIMATE_START": LCDItem(
                 title="Ilmastointi start",
-                id="item_climate_start",
+                id="ITEM_CLIMATE_START",
                 target=weconnect_vehicle.start_climate_control,
             ),
-            "climate controller stopper": LCDItem(
+            "ITEM_CLIMATE_STOP": LCDItem(
                 title="Ilmastointi stop",
-                id="item_climate_stop",
+                id="ITEM_CLIMATE_STOP",
                 target=weconnect_vehicle.stop_climate_control,
             ),
-            "update weconnect": LCDItem(
+            "ITEM_WECONNECT_UPDATE": LCDItem(
                 title="Päivitä nyt",
-                id="item_weconnect_update_now",
+                id="ITEM_WECONNECT_UPDATE",
                 target=self.__weconnect_updater.update,
                 target_args=[[Domain.CHARGING, Domain.CLIMATISATION, Domain.READINESS]],
             ),
-            "spot price now": self.__spot_price_provider.price_now_item,
+            "ITEM_SPOT_PRICE_NOW": self.__spot_price_provider.price_now_item,
         }
 
         scenes = {}

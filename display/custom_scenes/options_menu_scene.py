@@ -44,7 +44,7 @@ class OptionsMenuScene(LCDScene):
         self.add_item(
             LCDItem(
                 content_centering=True,
-                id="item_return",
+                id="ITEM_RETURN",
                 title="Return",
                 target=lcd_scene_controller.home,
             )
@@ -52,7 +52,7 @@ class OptionsMenuScene(LCDScene):
         self.add_item(
             LCDItem(
                 content_centering=True,
-                id="item_select_vehicle",
+                id="ITEM_SELECT_VEHICLE",
                 title="Select Vehicle",
                 target=self.__vehicle_selection_scene,
             )
@@ -60,7 +60,7 @@ class OptionsMenuScene(LCDScene):
         self.add_item(
             LCDItem(
                 content_centering=True,
-                id="item_reboot",
+                id="ITEM_REBOOT",
                 title="Reboot System",
                 target=self.__reboot,
             )
@@ -68,7 +68,7 @@ class OptionsMenuScene(LCDScene):
         self.add_item(
             LCDItem(
                 content_centering=True,
-                id="item_shutdown",
+                id="ITEM_SHUTDOWN",
                 title="Shutdown System",
                 target=self.__shutdown,
             )
@@ -76,7 +76,7 @@ class OptionsMenuScene(LCDScene):
         self.add_item(
             LCDItem(
                 content_centering=True,
-                id="item_close_app",
+                id="ITEM_CLOSE_APP",
                 title="Close App",
                 target=close_app_event,
             )

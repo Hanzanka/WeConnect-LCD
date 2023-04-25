@@ -59,7 +59,7 @@ class WeConnectLCDMessage:
             message_config["data provider id"]
         )
         self.__data_provider.add_callback_function(
-            id="MESSAGE", function=self.__on_data_update
+            id=self.__id, function=self.__on_data_update
         )
         LOG.debug(f"Successfully initialized WeConnectLCDMessage (ID: {self.__id})")
 

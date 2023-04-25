@@ -344,7 +344,7 @@ class ClimateController:
         self.__climate_controls.value = operation
 
         self.__weconnect_updater.add_scheduler(
-            id="REQUEST FINDER",
+            id="REQUEST_FINDER",
             domains=[Domain.CLIMATISATION],
             interval=10,
             silent=False,
@@ -363,7 +363,7 @@ class ClimateController:
         LOG.debug(f"Initializing tracker on request (ID: {request.requestId})")
         self.__request = request
 
-        self.__weconnect_updater.remove_scheduler(id="REQUEST FINDER")
+        self.__weconnect_updater.remove_scheduler(id="REQUEST_FINDER")
         self.__climate_requests.removeObserver(
             observer=self.__on_requests_update,
             flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
@@ -408,7 +408,7 @@ class ClimateController:
                 flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
             )
         else:
-            self.__weconnect_updater.remove_scheduler(id="REQUEST FINDER")
+            self.__weconnect_updater.remove_scheduler(id="REQUEST_FINDER")
 
         self.__weconnect_updater.remove_scheduler(id="CLIMATE")
 

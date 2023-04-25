@@ -16,7 +16,7 @@ class PushButton:
     def __init__(
         self,
         pin: int,
-        id,
+        id: str,
         click_callback: callable,
         click_args: list = None,
         long_press_callback: callable = None,

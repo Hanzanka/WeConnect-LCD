@@ -29,7 +29,7 @@ class SpotPriceProvider:
         self.__price_now_item = None
         self.__price_items = None
         self.__prices_scene = LCDScene(
-            id="scene_spot_price_list",
+            id="SCENE_SPOT_PRICE_LIST",
             items_selectable=False,
             lcd_scene_controller=lcd_scene_controller,
         )
@@ -42,7 +42,7 @@ class SpotPriceProvider:
             func=self.__update,
             trigger="cron",
             minute="0, 15, 30, 45",
-            id="spot price updater",
+            id="SPOT_PRICE_UPDATER",
         )
         LOG.debug("Successfully initialized SpotPriceProvider")
 
@@ -70,7 +70,7 @@ class SpotPriceProvider:
         hours = [str(i) if i > 9 else "0" + str(i) for i in range(24)]
         for hour in hours:
             self.__price_items[hour] = LCDItem(
-                id=f"item_spot_price_{hour}",
+                id=f"ITEM_SPOT_PRICE_{hour}",
                 title=f"Tunti {hour}:",
                 content_centering=False,
                 second_title=str(self.__prices[hour]["PriceWithTax"]) + "C/kWh",
@@ -79,7 +79,7 @@ class SpotPriceProvider:
 
         self.__price_now_item = LCDItem(
             title="Hinta Nyt",
-            id="item_spot_price_now",
+            id="ITEM_SPOT_PRICE_NOW",
             content_centering=False,
             second_title=str(self.__price_now) + "C/kWh",
             target=self.__prices_scene,

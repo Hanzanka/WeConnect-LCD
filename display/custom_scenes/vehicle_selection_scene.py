@@ -46,7 +46,7 @@ class VehicleSelectionScene(LCDScene):
             self.add_item(
                 LCDItem(
                     title=vehicle.nickname,
-                    id=f"item_{vin}",
+                    id=f"ITEM_{vin}",
                     target=self.__select_vehicle,
                     target_args=[vin],
                 )

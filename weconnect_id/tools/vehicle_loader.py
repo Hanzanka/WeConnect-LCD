@@ -83,8 +83,8 @@ class WeConnectVehicleLoader:
         self.__lcd_controller.display_message("Initializing Automated Messages")
         configure_auto_messages(self.__config, weconnect_vehicle, self.__lcd_controller)
 
-        self.__lcd_scene_controller.set_home_scene(scene=scenes["scene_menu"])
-        self.__lcd_scene_controller.load_scene(scene=scenes["scene_menu"])
+        self.__lcd_scene_controller.set_home_scene(scene=scenes["SCENE_MENU"])
+        self.__lcd_scene_controller.load_scene(scene=scenes["SCENE_MENU"])
 
     @property
     def vehicle_change_allowed(self) -> bool:

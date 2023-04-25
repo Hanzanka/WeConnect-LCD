@@ -50,7 +50,7 @@ class WeConnectLCDItem(LCDItem):
         )
         self.__translate = translate
         self.__data_provider = data_provider
-        self.__data_provider.add_callback_function(id="LCD_ITEMS", function=self.__on_data_update)
+        self.__data_provider.add_callback_function(id=id, function=self.__on_data_update)
         LOG.debug(f"Successfully initialized WeConnectLCDItem (ID: {self._id})")
 
     def __on_data_update(self) -> None:

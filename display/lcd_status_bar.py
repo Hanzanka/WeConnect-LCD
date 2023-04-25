@@ -51,19 +51,19 @@ class LCDStatusBar:
 
         self.__weconnect_vehicle.get_data_property(
             "battery level"
-        ).add_callback_function(id="STATUS_BAR", function=self.__update_battery_icon)
+        ).add_callback_function(id="STATUS_BAR_BATTERY_LEVEL", function=self.__update_battery_icon)
         self.__weconnect_vehicle.get_data_property(
             "charge state"
-        ).add_callback_function(id="STATUS_BAR", function=self.__update_charging_icon)
+        ).add_callback_function(id="STATUS_BAR_CHARGE_STATE", function=self.__update_charging_icon)
         self.__weconnect_vehicle.get_data_property(
             "target battery level"
-        ).add_callback_function(id="STATUS_BAR", function=self.__update_charging_icon)
+        ).add_callback_function(id="STATUS_BAR_TARGET_BATTERY_LEVEL", function=self.__update_charging_icon)
         self.__weconnect_vehicle.get_data_property(
             "charging plug connection status"
-        ).add_callback_function(id="STATUS_BAR", function=self.__update_charging_icon)
+        ).add_callback_function(id="STATUS_BAR_CHARGING_PLUG", function=self.__update_charging_icon)
         self.__weconnect_vehicle.get_data_property(
             "climate controller state"
-        ).add_callback_function(id="STATUS_BAR", function=self.__update_climate_icon)
+        ).add_callback_function(id="STATUS_BAR_CLIMATE", function=self.__update_climate_icon)
 
         self.__update_battery_icon()
         self.__update_charging_icon()
