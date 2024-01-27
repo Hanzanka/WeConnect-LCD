@@ -1,16 +1,15 @@
 from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from display.lcd_scene_controller import LCDSceneController
+    from weconnect_id.tools.updater import WeConnectUpdater
+    from build_tools.scene_builder import SceneBuilder
 from weconnect_id.vehicle import WeConnectVehicle
-from weconnect_id.tools.updater import WeConnectUpdater
 from button.push_button import PushButton
 import json
 from led.led_driver import load_automated_leds
 import logging
 from display.weconnect_lcd_message import configure_auto_messages
-from build_tools.scene_builder import SceneBuilder
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from display.lcd_scene_controller import LCDSceneController
 
 
 LOG = logging.getLogger("vehicle")
@@ -48,7 +47,6 @@ class WeConnectVehicleLoader:
         self.__lcd_controller.display_message("Importing Vehicle Data")
         for vehicle_vin, vehicle in self.__weconnect.vehicles.items():
             if vehicle_vin == vin:
-                print(vehicle)
                 weconnect_vehicle = WeConnectVehicle(
                     vehicle=vehicle, config=self.__config
                 )
