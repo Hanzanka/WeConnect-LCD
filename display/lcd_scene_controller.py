@@ -70,7 +70,9 @@ class LCDSceneController:
         if self.__selected_scene.id == scene.id:
             if scene.has_title:
                 scene_content = scene.content
-                icons = self.__status_bar.icons
+                icons = ""
+                if self.__status_bar is not None:
+                    icons = self.__status_bar.icons
                 scene_content[0] = scene_content[0][: -len(icons)] + icons
                 self.__lcd_controller.update_lcd(scene_content)
                 return
