@@ -55,10 +55,11 @@ lcd_controller.display_message(
 )
 sleep(2)
 
+weconnect = WeConnect(username=email, password=passwd, timeout=30, forceReloginAfter=86400)
+
 while True:
     try:
         lcd_controller.display_message("Logging In To WeConnect")
-        weconnect = WeConnect(email, passwd)
         weconnect.login()
         break
     except Exception as e:
@@ -74,35 +75,38 @@ lcd_controller.display_message("Initializing Updater")
 weconnect_updater = WeConnectUpdater(weconnect=weconnect, config=config)
 
 selected_vin = config["selected vehicle vin"]
-lcd_controller.display_message(
-    message="Selected Vehicle: " + str(weconnect.vehicles[selected_vin].nickname)
-)
+if selected_vin != "none":
+    lcd_controller.display_message(
+        message="Selected Vehicle: " + str(weconnect.vehicles[selected_vin].nickname)
+    )
+else:
+    lcd_controller.display_message(message="No Vehicle Selected")
 sleep(2)
 
 spot_price_provider = SpotPriceProvider(lcd_scene_controller=lcd_scene_controller)
 
-lcd_controller.display_message("Inititalizing Buttons")
+lcd_controller.display_message("Initializing Buttons")
 button_up = PushButton(
     pin=config["pin layout"]["button up"],
-    id="UP",
+    id="BUTTON_UP",
     click_callback=lcd_scene_controller.up,
 )
 button_up.enable()
 button_down = PushButton(
     pin=config["pin layout"]["button down"],
-    id="DOWN",
+    id="BUTTON_DOWN",
     click_callback=lcd_scene_controller.down,
 )
 button_down.enable()
 button_next = PushButton(
     pin=config["pin layout"]["button next"],
-    id="NEXT",
+    id="BUTTON_NEXT",
     click_callback=lcd_scene_controller.next,
 )
 button_next.enable()
 button_back = PushButton(
     pin=config["pin layout"]["button back"],
-    id="BACK",
+    id="BUTTON_BACK",
     click_callback=lcd_scene_controller.back,
 )
 button_back.enable()
@@ -122,7 +126,7 @@ weconnect_vehicle_loader = WeConnectVehicleLoader(
 )
 
 vehicle_selection_scene = VehicleSelectionScene(
-    id="scene_vehicle_selection",
+    id="SCENE_VEHICLE_SELECTION",
     lcd_scene_controller=lcd_scene_controller,
     title="Select Vehicle",
     items_selectable=True,
@@ -133,7 +137,7 @@ vehicle_selection_scene = VehicleSelectionScene(
 options_menu_scene = OptionsMenuScene(
     close_app_event=stop_event.set,
     vehicle_selection_scene=vehicle_selection_scene,
-    id="scene_options_menu",
+    id="SCENE_OPTIONS_MENU",
     title="Options Menu",
     items_selectable=True,
     lcd_scene_controller=lcd_scene_controller,
@@ -141,7 +145,7 @@ options_menu_scene = OptionsMenuScene(
 
 button_wake_screen_and_shutdown = PushButton(
     pin=config["pin layout"]["button display_and_settings"],
-    id="DISPLAY_AND_SETTINGS",
+    id="BUTTON_DISPLAY_AND_SETTINGS",
     click_callback=lcd_controller.backlight_on,
     long_press_callback=lcd_scene_controller.load_scene,
     long_press_time=5,
