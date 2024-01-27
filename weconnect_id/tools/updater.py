@@ -4,7 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.base import ConflictingIdError
 import logging
 from weconnect.domain import Domain
-from led.led_driver import create_led_driver
+from led.led_driver import create_led_driver, LEDDriver
 
 
 LOG = logging.getLogger("weconnect_updater")
@@ -15,23 +15,22 @@ class WeConnectUpdaterError(Exception):
 
 
 class WeConnectUpdater:
-
     DOMAINS = [Domain.CHARGING, Domain.CLIMATISATION, Domain.READINESS]
 
     def __init__(self, weconnect: WeConnect, config: dict) -> None:
-        '''
+        """
         Used to update the data for the app from the server.
 
         Args:
             weconnect (WeConnect): WeConnect-API instance which is used to update data from server.
             config (dict): Configuration dict for the updater.
-        '''
-        
+        """
+
         LOG.debug("Initializing WeConnectUpdater")
         self.__weconnect = weconnect
         self.__update_led = create_led_driver(
             pin=config["pin layout"]["led updater"],
-            id="WECONNECT_UPDATE",
+            id="LED_WECONNECT_UPDATE",
             default_frequency=10,
         )
 
@@ -46,7 +45,9 @@ class WeConnectUpdater:
         self.__start_main_update_scheduler()
         self.__start_total_update_scheduler()
 
-    def add_scheduler(self, id: str, domains: list, interval: int, silent: bool) -> None:
+    def add_scheduler(
+        self, id: str, domains: list, interval: int, silent: bool, run_immediately: bool = True
+    ) -> None:
         LOG.debug(f"Adding WeConnectUpdater scheduler (ID: {id})")
         try:
             self.__scheduler.add_job(
@@ -55,11 +56,13 @@ class WeConnectUpdater:
                 args=[domains, silent],
                 trigger="interval",
                 seconds=interval,
+                max_instances=1,
             )
         except ConflictingIdError as e:
             LOG.exception(f"WeConnectUpdater scheduler with (ID: {id}) already exists")
             raise e
-        self.update(domains=domains, silent=silent)
+        if run_immediately:
+            self.update(domains=domains, silent=silent)
 
     def remove_scheduler(self, id: str) -> None:
         LOG.debug(f"Removing WeConnectUpdater scheduler (ID: {id})")
@@ -80,6 +83,8 @@ class WeConnectUpdater:
                 updateCapabilities=(True if Domain.ALL in domains else False),
                 selective=domains,
             )
+            if self.__update_led.state == LEDDriver.LEDState.ON:
+                self.__update_led.turn_off()
 
         except Exception as e:
             LOG.exception(e)
@@ -93,6 +98,8 @@ class WeConnectUpdater:
 
         if self.__scheduler.state == 2:
             self.__scheduler.resume()
+            
+        LOG.debug(f"Successfully updated WeConnect data (Domains: {domains})")
 
     def __start_main_update_scheduler(self) -> None:
         self.__scheduler.add_job(
