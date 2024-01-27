@@ -1,14 +1,15 @@
 import logging
+from logging.handlers import RotatingFileHandler
 
 
 def load_loggers(config: dict) -> None:
-    '''
+    """
     Configures the loggers used to log app's events.
 
     Args:
         config (dict): Configurations for the loggers.
-    '''
-    
+    """
+
     logs_path = config["paths"]["application_logs"]
 
     base_formatter = logging.Formatter(
@@ -20,10 +21,10 @@ def load_loggers(config: dict) -> None:
         datefmt="%d.%m.%Y | %H:%M:%S",
     )
 
-    all_logs_file_handler = logging.FileHandler(logs_path + "all.log")
+    all_logs_file_handler = RotatingFileHandler(logs_path + "all.log", maxBytes=2 * 1024**2, backupCount=10)
     all_logs_file_handler.setFormatter(all_logs_formatter)
 
-    exceptions_file_handler = logging.FileHandler(logs_path + "exceptions.log")
+    exceptions_file_handler = RotatingFileHandler(logs_path + "exceptions.log", maxBytes=2 * 1024**2, backupCount=10)
     exceptions_file_handler.setLevel(logging.ERROR)
     exceptions_file_handler.setFormatter(all_logs_formatter)
 
@@ -43,9 +44,9 @@ def load_loggers(config: dict) -> None:
         "scene_builder",
         "lcd_message",
         "lcd_status_bar",
-        "spot_price_provider"
+        "spot_price_provider",
     ]
-    
+
     for logger_name in logger_names:
         logger = logging.getLogger(logger_name)
         logger.setLevel(logging.DEBUG)
