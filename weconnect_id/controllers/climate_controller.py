@@ -2,10 +2,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from weconnect_id.tools.updater import WeConnectUpdater, WeConnectUpdaterError
     from display.lcd_controller import LCDController
     from weconnect_id.tools.vehicle_loader import WeConnectVehicleLoader
     from weconnect_id.vehicle import WeConnectVehicle
+from weconnect_id.tools.updater import WeConnectUpdater, WeConnectUpdaterError
 from led.led_driver import create_led_driver
 import logging
 from weconnect.elements.generic_status import GenericStatus
@@ -138,6 +138,11 @@ class ClimateController:
         self.__climate_requests = self.__vehicle.domains["climatisation"][
             "climatisationStatus"
         ].requests
+        self.__climate_requests.addObserver(
+            observer=self.__on_requests_update,
+            flag=AddressableLeaf.ObserverEvent.ALL,
+            priority=AddressableLeaf.ObserverPriority.INTERNAL_FIRST,
+        )
 
         self.__availability_status = ClimateController.AvailabilityState.AVAILABLE
 
@@ -332,12 +337,6 @@ class ClimateController:
         self.__availability_status = ClimateController.AvailabilityState.UNAVAILABLE
         self.__weconnect_vehicle_loader.disable_vehicle_change()
 
-        self.__climate_requests.addObserver(
-            observer=self.__on_requests_update,
-            flag=AddressableLeaf.ObserverEvent.ALL,
-            priority=AddressableLeaf.ObserverPriority.INTERNAL_FIRST,
-        )
-
         self.__excepted_request_operation_value = self.EXPECTED_OPERATION_VALUES[
             operation
         ]
@@ -346,8 +345,9 @@ class ClimateController:
         self.__weconnect_updater.add_scheduler(
             id="REQUEST_FINDER",
             domains=[Domain.CLIMATISATION],
-            interval=10,
+            interval=15,
             silent=False,
+            run_immediately=True,
         )
         self.__timeout_timer = Timer(
             function=self.__finish_operation,
@@ -364,10 +364,6 @@ class ClimateController:
         self.__request = request
 
         self.__weconnect_updater.remove_scheduler(id="REQUEST_FINDER")
-        self.__climate_requests.removeObserver(
-            observer=self.__on_requests_update,
-            flag=AddressableLeaf.ObserverEvent.VALUE_CHANGED,
-        )
 
         if self.__request.operation.value == Operation.START:
             self.__operation_led.turn_on()
@@ -380,7 +376,11 @@ class ClimateController:
             priority=AddressableLeaf.ObserverPriority.USER_HIGH,
         )
         self.__weconnect_updater.add_scheduler(
-            id="CLIMATE", domains=[Domain.CLIMATISATION], interval=15, silent=False
+            id="CLIMATE",
+            domains=[Domain.CLIMATISATION],
+            interval=15,
+            silent=False,
+            run_immediately=False,
         )
         LOG.debug(
             f"Successfully initialized tracker on request (ID: {self.__request.requestId})"
@@ -412,12 +412,6 @@ class ClimateController:
 
         self.__weconnect_updater.remove_scheduler(id="CLIMATE")
 
-        if self.__request is None:
-            self.__climate_requests.removeObserver(
-                observer=self.__on_requests_update,
-                flag=AddressableLeaf.ObserverEvent.ALL,
-            )
-
         self.__request = None
         self.__excepted_request_operation_value = None
 
@@ -439,6 +433,12 @@ class ClimateController:
         )
 
     def __on_requests_update(self, element, flags) -> None:
+        if (
+            self.__excepted_request_operation_value is None
+            or self.__request is not None
+        ):
+            return
+
         for request in self.__climate_requests.values():
             if request.status.value not in self.ONGOING_REQUESTS:
                 continue
