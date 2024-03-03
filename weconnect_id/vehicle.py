@@ -7,6 +7,7 @@ from weconnect_id.controllers.climate_controller import ClimateController
 from weconnect_id.data_providers.battery_data import WeConnectBatteryData
 from weconnect_id.data_providers.climatisation_data import WeConnectClimateData
 from weconnect_id.data_providers.readiness_data import WeConnectReadinessData
+from weconnect_id.data_providers.measurement_data import WeConnectMeasurementData
 from weconnect_id.data_providers.vehicle_data_property import (
     WeConnectVehicleDataProperty,
 )
@@ -31,7 +32,6 @@ class WeConnectVehicle:
             vehicle (Vehicle): Used to provide data to the WeConnectVehicleDataProperties, to enable features and interact with climate controller.
             config (dict): Provides configurations for WeConnectVehicleDataProperties.
         '''
-        
         LOG.debug(f"Initializing WeConnectVehicle (Vehicle: {vehicle.nickname})")
         self.__import_vehicle_properties(vehicle=vehicle)
         self.__api_vehicle.enableTracker()
@@ -39,6 +39,7 @@ class WeConnectVehicle:
         self.__battery_data_provider = WeConnectBatteryData(vehicle=vehicle)
         self.__climatisation_data_provider = WeConnectClimateData(vehicle=vehicle)
         self.__readiness_data_provider = WeConnectReadinessData(vehicle=vehicle)
+        self.__measurements_data_provider = WeConnectMeasurementData(vehicle=vehicle)
 
         self.__import_vehicle_data()
 
@@ -85,6 +86,7 @@ class WeConnectVehicle:
         self.__data.update(self.__battery_data_provider.get_data())
         self.__data.update(self.__climatisation_data_provider.get_data())
         self.__data.update(self.__readiness_data_provider.get_data())
+        self.__data.update(self.__measurements_data_provider.get_data())
 
     def __add_data_property_translations(self, config: dict) -> None:
         for data_id, translations in config["translations"].items():
