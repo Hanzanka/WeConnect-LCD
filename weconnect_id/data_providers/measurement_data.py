@@ -65,6 +65,7 @@ class WeConnectMeasurementData(WeConnectVehicleData):
                 formula=lambda x: x - 273.15,
                 desc="High voltage battery min temperature",
                 category="measurement",
+                unit="°C"
             )
         )
         weconnect_element = battery_temperature.temperatureHvBatteryMax_K
@@ -75,6 +76,7 @@ class WeConnectMeasurementData(WeConnectVehicleData):
                 formula=lambda x: x - 273.15,
                 desc="High voltage battery max temperature",
                 category="measurement",
+                unit="°C"
             )
         )
         return battery_temperature_data
