@@ -108,6 +108,7 @@ class WeConnectUpdater:
             args=[self.DOMAINS, self.__silent_main_update],
             trigger="interval",
             seconds=self.__update_rate,
+            replace_existing=True
         )
 
     def __start_total_update_scheduler(self) -> None:
@@ -117,6 +118,7 @@ class WeConnectUpdater:
             args=[[Domain.ALL], self.__silent_main_update],
             trigger="interval",
             hours=1,
+            replace_existing=True
         )
 
     @property
