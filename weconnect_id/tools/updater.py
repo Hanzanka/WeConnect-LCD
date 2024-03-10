@@ -16,7 +16,7 @@ class WeConnectUpdaterError(Exception):
 
 
 class WeConnectUpdater:
-    DOMAINS = [Domain.CHARGING, Domain.CLIMATISATION, Domain.READINESS]
+    DOMAINS = [Domain.CHARGING, Domain.CLIMATISATION, Domain.READINESS, Domain.MEASUREMENTS]
 
     def __init__(self, weconnect: WeConnect, config: dict) -> None:
         """
