@@ -93,8 +93,12 @@ class WeConnectVehicle:
             self.__data[data_id].add_translations(translations=translations)
 
     def __setup_data_property_loggers(self, config: dict) -> None:
-        for data_id in config["log data"]:
-            self.__data[data_id].set_logging(True, config["paths"]["data_logs"])
+        if "all" in config["log data"]:
+            for data_property in self.__data.values():
+                data_property.set_logging(True, config["paths"]["data_logs"])
+        else:
+            for data_id in config["log data"]:
+                self.__data[data_id].set_logging(True, config["paths"]["data_logs"])
 
     def start_climate_control(self) -> None:
         '''
