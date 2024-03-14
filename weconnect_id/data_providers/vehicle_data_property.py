@@ -6,6 +6,7 @@ from datetime import datetime
 import logging
 from enum import Enum
 from weconnect.addressable import AddressableAttribute, AddressableLeaf
+import json
 
 
 LOG = logging.getLogger("data_properties")
@@ -208,6 +209,18 @@ class WeConnectVehicleDataProperty:
         self.__logging_enabled = logging_enabled
         self.__logger_path = path
         self.log()
+
+    def as_json(self) -> str:
+        return json.dumps(
+            {
+                "category": self.__category,
+                "description": self.__desc,
+                "unit": self.__unit,
+                "value": self._value,
+                "time": self._time_updated,
+                "date": self._date_updated,
+            }
+        )
 
 
 class CalculatedWeConnectVehicleDataProperty(WeConnectVehicleDataProperty):
