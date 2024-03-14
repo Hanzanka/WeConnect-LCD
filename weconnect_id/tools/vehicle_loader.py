@@ -47,10 +47,10 @@ class WeConnectVehicleLoader:
         self.__lcd_controller.display_message("Importing Vehicle Data")
         for vehicle_vin, vehicle in self.__weconnect.vehicles.items():
             if vehicle_vin == vin:
-                weconnect_vehicle = WeConnectVehicle(
+                self.__weconnect_vehicle = WeConnectVehicle(
                     vehicle=vehicle, config=self.__config
                 )
-                weconnect_vehicle.setup_climate_controller(
+                self.__weconnect_vehicle.setup_climate_controller(
                     weconnect_updater=self.__weconnect_updater,
                     lcd_controller=self.__lcd_controller,
                     weconnect_vehicle_loader=self,
@@ -66,23 +66,27 @@ class WeConnectVehicleLoader:
         button_climate = PushButton(
             pin=self.__config["pin layout"]["button climate"],
             id="CLIMATE",
-            click_callback=weconnect_vehicle.start_climate_control,
-            long_press_callback=weconnect_vehicle.stop_climate_control,
+            click_callback=self.__weconnect_vehicle.start_climate_control,
+            long_press_callback=self.__weconnect_vehicle.stop_climate_control,
             long_press_time=2,
         )
         button_climate.enable()
 
         self.__lcd_controller.display_message("Loading Scenes")
-        scenes = self.__scene_builder.load_scenes(weconnect_vehicle=weconnect_vehicle)
+        scenes = self.__scene_builder.load_scenes(weconnect_vehicle=self.__weconnect_vehicle)
 
         self.__lcd_controller.display_message("Initializing Automated Leds")
-        load_automated_leds(config=self.__config, weconnect_vehicle=weconnect_vehicle)
+        load_automated_leds(config=self.__config, weconnect_vehicle=self.__weconnect_vehicle)
 
         self.__lcd_controller.display_message("Initializing Automated Messages")
-        configure_auto_messages(self.__config, weconnect_vehicle, self.__lcd_controller)
+        configure_auto_messages(self.__config, self.__weconnect_vehicle, self.__lcd_controller)
 
         self.__lcd_scene_controller.set_home_scene(scene=scenes["SCENE_MENU"])
         self.__lcd_scene_controller.load_scene(scene=scenes["SCENE_MENU"])
+
+    @property
+    def selected_vehicle(self) -> WeConnectVehicle:
+        return self.__weconnect_vehicle
 
     @property
     def vehicle_change_allowed(self) -> bool:
