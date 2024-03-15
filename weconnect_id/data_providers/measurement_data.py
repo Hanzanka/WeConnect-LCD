@@ -32,8 +32,14 @@ class WeConnectMeasurementData(WeConnectVehicleData):
     def __import_data(self) -> None:
         LOG.debug(f"Importing measurement data (Vehicle: {self._vehicle.nickname})")
         measurement_data = self._vehicle.domains["measurements"]
-        self._data.update(self.__get_odometer(odometer=measurement_data["odometerStatus"]))
-        self._data.update(self.__get_battery_temperature(battery_temperature=measurement_data["temperatureBatteryStatus"]))
+        self._data.update(
+            self.__get_odometer(odometer=measurement_data["odometerStatus"])
+        )
+        self._data.update(
+            self.__get_battery_temperature(
+                battery_temperature=measurement_data["temperatureBatteryStatus"]
+            )
+        )
 
     def __get_odometer(self, odometer: OdometerMeasurement) -> dict:
         LOG.debug(f"Importing ODOMeter data (Vehicle: {self._vehicle.nickname})")
@@ -44,7 +50,7 @@ class WeConnectMeasurementData(WeConnectVehicleData):
                 id="odometer",
                 weconnect_element=weconnect_element,
                 unit="km",
-                desc="Odometer measurement",
+                desc="Odometer measurement in kms",
                 category="measurement",
             )
         )
@@ -60,23 +66,23 @@ class WeConnectMeasurementData(WeConnectVehicleData):
         weconnect_element = battery_temperature.temperatureHvBatteryMin_K
         battery_temperature_data[weconnect_element.getGlobalAddress()] = (
             CalculatedWeConnectVehicleDataProperty(
-                id="battery temperature min",
+                id="batteryTemperatureMin",
                 weconnect_element=weconnect_element,
                 formula=lambda x: x - 273.15,
-                desc="High voltage battery min temperature",
+                desc="High voltage battery minimum temperature in °C",
                 category="measurement",
-                unit="°C"
+                unit="°C",
             )
         )
         weconnect_element = battery_temperature.temperatureHvBatteryMax_K
         battery_temperature_data[weconnect_element.getGlobalAddress()] = (
             CalculatedWeConnectVehicleDataProperty(
-                id="battery temperature max",
+                id="batteryTemperatureMax",
                 weconnect_element=weconnect_element,
                 formula=lambda x: x - 273.15,
-                desc="High voltage battery max temperature",
+                desc="High voltage battery maximum temperature in °C",
                 category="measurement",
-                unit="°C"
+                unit="°C",
             )
         )
         return battery_temperature_data
