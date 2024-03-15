@@ -213,10 +213,11 @@ class WeConnectVehicleDataProperty:
     def as_json(self) -> str:
         return json.dumps(
             {
+                "id": self._id,
                 "category": self.__category,
                 "description": self.__desc,
-                "unit": self.__unit,
-                "value": self._value,
+                "unit": "" if self.__unit is None else self.__unit,
+                "value": self._value_string,
                 "time": self._time_updated,
                 "date": self._date_updated,
             }
